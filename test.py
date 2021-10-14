@@ -1,12 +1,10 @@
-import json
-import numpy
-import numpy as np
-import talib
-import websocket
+import websocket, json, pprint, talib, numpy
+import config
 from binance.client import Client
 from binance.enums import *
-
-import config
+import numpy as np
+import time
+from Indicators import Indicator
 
 # https://data.binance.vision/?prefix=data
 
@@ -20,6 +18,8 @@ closes = []
 highs = []
 lows = []
 
+
+
 is_long = False
 client = Client(config.API_KEY, config.API_SECRET)
 hist = client.get_historical_klines(TRADE_SYMBOL, Client.KLINE_INTERVAL_5MINUTE, "5 day ago UTC")
@@ -28,16 +28,20 @@ hist = hist[:-1]
 
 print(np.array(hist).shape)
 
+
 for a in hist:
     closes.append(float(a[4]))
     highs.append(float(a[2]))
     lows.append(float(a[3]))
+
+
 
 print("Closes len: " + str(len(closes)))
 print("Highs len: " + str(len(highs)))
 print("Lows len: " + str(len(lows)))
 
 print(closes[0])
+
 
 np_closes = numpy.array(closes)
 macd, signal, hist = talib.MACD(np_closes)
@@ -48,6 +52,8 @@ stoch_k, stoch_d = talib.STOCH(numpy.array(highs), numpy.array(lows), np_closes,
 print("Stochastic: [k, d] > [" + str(stoch_k[-1]) + ", " + str(stoch_d[-1]) + "]")
 print("RSI: " + str(rsi[-1]))
 print("MACD: [macd, sig] > [" + str(macd[-1]) + ", " + str(signal[-1]) + "]")
+
+
 
 
 def order(side, quantity, symbol, order_type=ORDER_TYPE_MARKET):
@@ -122,3 +128,4 @@ def on_message_event(ws, message):
 
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_message_event)
 ws.run_forever()
+
