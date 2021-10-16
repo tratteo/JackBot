@@ -19,6 +19,8 @@ class Position:
         self.pos_type = pos_type
         self.closed = False
         self.won = False
+        self.investment = 0
+        self.profit = 0
 
 
     def __str__(self):
@@ -59,12 +61,13 @@ class Position:
         return False, False
 
 
-    def open(self, open_date: datetime.date, open_price: float, take_profit: float, stop_loss: float):
+    def open(self, open_date: datetime.date, open_price: float, take_profit: float, stop_loss: float, investment: float):
         self.open_date = open_date
         self.open_price = open_price
         self.take_profit = take_profit
         self.stop_loss = stop_loss
         self.closed = False
+        self.investment = investment
         # TODO send open order
         # TODO set limit order for stop loss and take profit
 
@@ -82,4 +85,5 @@ class Position:
                 self.result_percentage = ((self.open_price / self.take_profit) - 1) * 100
             else:
                 self.result_percentage = ((self.open_price / self.stop_loss) - 1) * 100
+        self.profit = self.investment * (self.result_percentage / 100)
         # TODO send close order

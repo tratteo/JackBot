@@ -3,6 +3,7 @@ import talib as technical
 
 from Core.Condition import *
 from Core.Strategy import *
+from Core.WalletDelegates import WalletDelegates
 
 
 class StochRsiMacdStrategy(Strategy):
@@ -14,12 +15,13 @@ class StochRsiMacdStrategy(Strategy):
     RISK_REWARD = 2
     ATR_FACTOR = 3
     RSI_PERIOD = 14
-    MAX_OPEN_POSITIONS_NUMBER = 2
-    INTERVALS_TOLERANCE_NUMBER = 5
+    MAX_OPEN_POSITIONS_NUMBER = 4
+    INTERVALS_TOLERANCE_NUMBER = 6
+    INVESTMENT_RATE = 0.2
 
 
-    def __init__(self):
-        super().__init__(self.MAX_OPEN_POSITIONS_NUMBER)
+    def __init__(self, wallet: WalletDelegates, handle_positions: bool = False):
+        super().__init__(wallet, self.MAX_OPEN_POSITIONS_NUMBER, handle_positions)
         self.long_conditions.append(EventStrategyCondition(self.macd_long_condition, self.INTERVALS_TOLERANCE_NUMBER))
         self.long_conditions.append(PerpetualStrategyCondition(self.long_perpetual_condition))
         self.long_conditions.append(DoubledStrategyCondition(self.long_necessary, self.long_cancel, self.INTERVALS_TOLERANCE_NUMBER))
@@ -27,6 +29,10 @@ class StochRsiMacdStrategy(Strategy):
         self.short_conditions.append(EventStrategyCondition(self.macd_short_condition, self.INTERVALS_TOLERANCE_NUMBER))
         self.short_conditions.append(PerpetualStrategyCondition(self.short_perpetual_condition))
         self.short_conditions.append(DoubledStrategyCondition(self.short_necessary, self.short_cancel, self.INTERVALS_TOLERANCE_NUMBER))
+
+
+    def get_margin_investment(self):
+        return self.wallet.get_balance_delegate() * self.INVESTMENT_RATE
 
 
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
