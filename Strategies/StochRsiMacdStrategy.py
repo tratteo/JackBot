@@ -1,27 +1,26 @@
 import numpy as np
 import talib as technical
 
-from Core.Condition import *
-from Core.Strategy import *
-from Core.WalletDelegates import WalletDelegates
+from Bot.Core import *
 
 
 class StochRsiMacdStrategy(Strategy):
-    STOCH_OVERBOUGHT = 80
-    STOCH_OVERSOLD = 20
+    STOCH_OVERBOUGHT = 82
+    STOCH_OVERSOLD = 18
     STOCH_FAST_K = 14
     STOCH_SLOW_K = 1
     STOCH_SLOW_D = 3
-    RISK_REWARD = 2
-    ATR_FACTOR = 3
     RSI_PERIOD = 14
-    MAX_OPEN_POSITIONS_NUMBER = 4
-    INTERVALS_TOLERANCE_NUMBER = 6
-    INVESTMENT_RATE = 0.2
+
+    RISK_REWARD = 2
+    ATR_FACTOR = 2
+    MAX_OPEN_POSITIONS_NUMBER = 5
+    INTERVALS_TOLERANCE_NUMBER = 4
+    INVESTMENT_RATE = 0.25
 
 
-    def __init__(self, wallet: WalletDelegates, handle_positions: bool = False):
-        super().__init__(wallet, self.MAX_OPEN_POSITIONS_NUMBER, handle_positions)
+    def __init__(self, wallet_handler: WalletHandler, handle_positions: bool = False):
+        super().__init__(wallet_handler, self.MAX_OPEN_POSITIONS_NUMBER, handle_positions)
         self.long_conditions.append(EventStrategyCondition(self.macd_long_condition, self.INTERVALS_TOLERANCE_NUMBER))
         self.long_conditions.append(PerpetualStrategyCondition(self.long_perpetual_condition))
         self.long_conditions.append(DoubledStrategyCondition(self.long_necessary, self.long_cancel, self.INTERVALS_TOLERANCE_NUMBER))
@@ -32,7 +31,8 @@ class StochRsiMacdStrategy(Strategy):
 
 
     def get_margin_investment(self):
-        return self.wallet.get_balance_delegate() * self.INVESTMENT_RATE
+        # TODO set a new margin investment strategy
+        return self.wallet_handler.get_balance() * self.INVESTMENT_RATE
 
 
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
@@ -111,14 +111,13 @@ class StochRsiMacdStrategy(Strategy):
     def long_perpetual_condition(self, frame) -> bool:
         macd, signal, hist = technical.MACD(np.array(self.closes))
         rsi = technical.RSI(np.array(self.closes), self.RSI_PERIOD)
-        # print("RSI: " + str(rsi[-1]) + ", MACD: " + str(macd[-1]) + ", " + str(signal[-1]) + ", t: " + str(frame["k"]["t"]))
-        return rsi[-1] > 50
+        return rsi[-1] > 50 and macd[-1] >= signal[-1]
 
 
     def short_perpetual_condition(self, frame) -> bool:
         macd, signal, hist = technical.MACD(np.array(self.closes))
         rsi = technical.RSI(np.array(self.closes), self.RSI_PERIOD)
-        return rsi[-1] < 50
+        return rsi[-1] < 50 and macd[-1] <= signal[-1]
 
 
     # endregion
