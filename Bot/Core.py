@@ -201,8 +201,8 @@ class Strategy(ABC):
         self.__short_conditions = self.get_short_conditions()
         self.__handle_positions = handle_positions
         self.__longest_period = longest_period
-        self.__get_balance_delegate = get_balance_delegate
-        self.__change_balance_delegate = change_balance_delegate
+        self.get_balance_delegate = get_balance_delegate
+        self.change_balance_delegate = change_balance_delegate
 
     @abstractmethod
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
@@ -247,8 +247,8 @@ class Strategy(ABC):
                 should_close, won = pos.should_close(close_price)
                 if should_close:
                     pos.close(won, close_price)
-                    if self.__change_balance_delegate:
-                        self.__change_balance_delegate(pos.profit + pos.investment)
+                    if self.change_balance_delegate:
+                        self.change_balance_delegate(pos.profit + pos.investment)
                     to_remove.append(pos)
                     self.closed_positions.append(pos)
                     if verbose: print("Closed position: " + str(pos))
@@ -271,12 +271,12 @@ class Strategy(ABC):
             for c in self.__short_conditions:
                 c.tick(frame)
 
-            if len(self.open_positions) < self.max_positions and self.__get_balance_delegate() > 0:
+            if len(self.open_positions) < self.max_positions and self.get_balance_delegate() > 0:
                 if self.__check_conditions(self.__long_conditions):
                     investment = self.get_margin_investment()
                     pos = Position(PositionType.LONG, candle["t"], close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG), investment)
-                    if self.__handle_positions and self.__change_balance_delegate:
-                        self.__change_balance_delegate(-investment)
+                    if self.__handle_positions and self.change_balance_delegate:
+                        self.change_balance_delegate(-investment)
                     pos.open(not self.__handle_positions)
                     self.open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))
@@ -285,8 +285,8 @@ class Strategy(ABC):
                 if self.__check_conditions(self.__short_conditions):
                     investment = self.get_margin_investment()
                     pos = Position(PositionType.SHORT, candle["t"], close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT), investment)
-                    if self.__handle_positions and self.__change_balance_delegate:
-                        self.__change_balance_delegate(-investment)
+                    if self.__handle_positions and self.change_balance_delegate:
+                        self.change_balance_delegate(-investment)
                     pos.open(not self.__handle_positions)
                     self.open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))

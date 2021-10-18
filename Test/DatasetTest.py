@@ -5,7 +5,7 @@ from numpy import genfromtxt
 
 from Strategies.StochRsiMacdStrategy import *
 
-data = genfromtxt('../Data/ETHUSDT_1-6_2021.csv', delimiter=';')
+data = genfromtxt('../Data/ADAUSDT_1-6_2021.csv', delimiter=';')
 
 CANDLE_TIME = 5
 INITIAL_BALANCE = 1000

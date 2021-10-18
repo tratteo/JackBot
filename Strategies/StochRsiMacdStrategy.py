@@ -5,25 +5,25 @@ from Bot.Core import *
 
 
 class StochRsiMacdStrategy(Strategy):
-    STOCH_OVERBOUGHT = 82
-    STOCH_OVERSOLD = 18
+    STOCH_OVERBOUGHT = 85
+    STOCH_OVERSOLD = 15
     STOCH_FAST_K = 14
     STOCH_SLOW_K = 1
     STOCH_SLOW_D = 3
     RSI_PERIOD = 14
+    MAX_OPEN_POSITIONS_NUMBER = 4
 
-    RISK_REWARD = 2
+    RISK_REWARD = 2.5
     ATR_FACTOR = 2
-    MAX_OPEN_POSITIONS_NUMBER = 5
-    INTERVALS_TOLERANCE_NUMBER = 4
-    INVESTMENT_RATE = 0.25
+    INTERVALS_TOLERANCE_NUMBER = 5
+    INVESTMENT_RATE = 0.05
 
     def __init__(self, get_balance_delegate, handle_positions: bool = False, change_balance_delegate=None, longest_period: int = 200):
         super().__init__(get_balance_delegate, self.MAX_OPEN_POSITIONS_NUMBER, handle_positions, change_balance_delegate, longest_period)
 
     def get_margin_investment(self):
         # TODO set a new margin investment strategy
-        return self.__get_balance_delegate() * self.INVESTMENT_RATE
+        return self.get_balance_delegate() * self.INVESTMENT_RATE
 
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
         atr = technical.ATR(np.array(self.highs), np.array(self.lows), np.array(self.closes))
