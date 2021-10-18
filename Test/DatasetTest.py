@@ -72,25 +72,25 @@ strategy = StochRsiMacdStrategy(wallet, True)
 
 
 def evaluate_performance():
-    for p in strategy.open_positions:
+    for p in strategy.__open_positions:
         wallet.change_balance(p.investment)
 
     total_profit = 0
     won = 0
     days = time_span / 1440
-    for c in strategy.closed_positions:
+    for c in strategy.__closed_positions:
         total_profit += c.profit
         if c.won: won += 1
     win_percentage = 0
-    if len(strategy.closed_positions) > 0:
-        win_percentage = won / len(strategy.closed_positions)
+    if len(strategy.__closed_positions) > 0:
+        win_percentage = won / len(strategy.__closed_positions)
 
     apy = ((((((((wallet.get_balance()) / INITIAL_BALANCE) - 1) * 100) / days) / 100) + 1) ** 365 - 1) * 100
     print("{:<20s}{:^4s}".format("Time span: ", str(int(days)) + " days"))
     print("{:<20s}{:^4.3f}".format("Initial balance: ", INITIAL_BALANCE))
     print("{:<20s}{:^4.3f}".format("Final balance: ", wallet.get_balance()))
     print("{:<20s}{:^4.3f}".format("Total profit: ", total_profit))
-    print("{:<20s}{:^4.3s}".format("Opened positions: ", str(len(strategy.open_positions) + len(strategy.closed_positions))))
+    print("{:<20s}{:^4.3s}".format("Opened positions: ", str(len(strategy.__open_positions) + len(strategy.__closed_positions))))
     print("{:<20s}{:^4.3f}".format("Win rate: ", win_percentage * 100) + "%")
     print("{:<20s}{:^4.3f}".format("Apy: ", apy) + "%")
 

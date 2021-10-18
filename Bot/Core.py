@@ -3,8 +3,8 @@ from abc import abstractmethod, ABC
 from datetime import datetime
 from enum import unique, Enum
 
-
 # region Position
+from typing import List
 
 
 @unique
@@ -15,24 +15,21 @@ class PositionType(Enum):
 
 class Position:
 
-    def __init__(self, pos_type, handle_orders: bool = True):
-        self.open_date = None
-        self.open_price = 0
+    def __init__(self, pos_type: PositionType, open_date: datetime.date, open_price: float, take_profit: float, stop_loss: float, investment: float):
         self.result_percentage = 0
-        self.take_profit = 0
-        self.stop_loss = 0
         self.pos_type = pos_type
-        self.closed = False
         self.won = False
-        self.investment = 0
         self.profit = 0
-        self.handle_orders = handle_orders
-
+        self.open_date = open_date
+        self.open_price = open_price
+        self.take_profit = take_profit
+        self.stop_loss = stop_loss
+        self.closed = False
+        self.investment = investment
 
     def to_json(self):
         return json.dumps(self, default=lambda o: o.__dict__,
                           sort_keys=True, indent=4)
-
 
     def __str__(self):
         if self.closed:
@@ -56,7 +53,6 @@ class Position:
                    ", type: " + str(self.pos_type) + \
                    ", closed: " + str(self.closed)
 
-
     def should_close(self, current_price: float) -> [bool, bool]:
         if self.pos_type == PositionType.LONG:
             if current_price >= self.take_profit:
@@ -78,18 +74,10 @@ class Position:
                 pass
         return False, False
 
-
-    def open(self, open_date: datetime.date, open_price: float, take_profit: float, stop_loss: float, investment: float):
-        self.open_date = open_date
-        self.open_price = open_price
-        self.take_profit = take_profit
-        self.stop_loss = stop_loss
-        self.closed = False
-        self.investment = investment
-        if self.handle_orders:
+    def open(self, handle_orders: bool = True):
+        if handle_orders:
             # TODO send open order, stop loss and take profit
             pass
-
 
     def close(self, won: bool, close_price: float):
         self.won = won
@@ -117,9 +105,13 @@ class StrategyCondition(ABC):
     def __init__(self):
         self.satisfied = False
 
-
     @abstractmethod
     def tick(self, frame):
+        pass
+
+    @abstractmethod
+    def reset(self):
+        self.satisfied = False
         pass
 
 
@@ -127,11 +119,14 @@ class PerpetualStrategyCondition(StrategyCondition):
 
     def __init__(self, condition):
         super().__init__()
-        self.condition = condition
-
+        self.__condition = condition
 
     def tick(self, frame):
-        self.satisfied = self.condition(frame)
+        self.satisfied = self.__condition(frame)
+        pass
+
+    def reset(self):
+        super().reset()
         pass
 
 
@@ -139,99 +134,95 @@ class EventStrategyCondition(StrategyCondition):
 
     def __init__(self, condition, tolerance_duration: int):
         super().__init__()
-        self.condition = condition
-        self.tolerance_duration = tolerance_duration
-        self.current_tolerance = 0
-
+        self.__condition = condition
+        self.__tolerance_duration = tolerance_duration
+        self.__current_tolerance = 0
 
     def tick(self, frame):
         if not self.satisfied:
-            self.satisfied = self.condition(frame)
-            if self.satisfied: self.current_tolerance = 0
+            self.satisfied = self.__condition(frame)
+            if self.satisfied: self.__current_tolerance = 0
         else:
-            self.satisfied = self.current_tolerance <= self.tolerance_duration
+            self.satisfied = self.__current_tolerance <= self.__tolerance_duration
 
         if self.satisfied:
-            self.current_tolerance += 1
+            self.__current_tolerance += 1
+
+    def reset(self):
+        super().reset()
+        self.__current_tolerance = 0
+        pass
 
 
 class DoubledStrategyCondition(StrategyCondition):
 
     def __init__(self, valid_condition, invalid_condition, duration_tolerance: int = 0):
         super().__init__()
-        self.valid_condition = valid_condition
-        self.invalid_condition = invalid_condition
-        self.duration_tolerance = duration_tolerance
-        self.current_tolerance = 0
-
+        self.__valid_condition = valid_condition
+        self.__invalid_condition = invalid_condition
+        self.__duration_tolerance = duration_tolerance
+        self.__current_tolerance = 0
 
     def tick(self, frame):
         if not self.satisfied:
-            self.satisfied = self.valid_condition(frame)
-            if self.satisfied: self.current_tolerance = 0
+            self.satisfied = self.__valid_condition(frame)
+            if self.satisfied: self.__current_tolerance = 0
         else:
-            self.satisfied = not self.invalid_condition(frame) and self.current_tolerance < self.duration_tolerance
+            self.satisfied = not self.__invalid_condition(
+                frame) and self.__current_tolerance < self.__duration_tolerance
 
         if self.satisfied:
-            self.current_tolerance += 1
+            self.__current_tolerance += 1
+
+    def reset(self):
+        super().reset()
+        self.__current_tolerance = 0
+        pass
 
 
 # endregion
 
-# region WalletHandler
-
-class WalletHandler:
-
-    def __init__(self, change_balance_delegate, get_balance_delegate):
-        self.__change_balance_delegate = change_balance_delegate
-        self.__get_balance_delegate = get_balance_delegate
-
-
-    def change_balance(self, amount):
-        self.__change_balance_delegate(amount)
-
-
-    def get_balance(self):
-        return self.__get_balance_delegate()
-
-
-# endregion
 
 # region Strategy
 
 
 class Strategy(ABC):
 
-    def __init__(self, wallet_handler: WalletHandler, max_positions: int, handle_positions: bool = False, longest_period: int = 200):
+    def __init__(self, get_balance_delegate, max_positions: int, handle_positions: bool = False, change_balance_delegate=None, longest_period: int = 200):
         self.max_positions = max_positions
         self.__long_valid = False
         self.__short_valid = False
-        self.open_positions = []
-        self.closed_positions = []
+        self.__open_positions = []
+        self.__closed_positions = []
         self.closes = []
         self.highs = []
         self.lows = []
-        self.long_conditions = []
-        self.short_conditions = []
-        self.handle_positions = handle_positions
-        self.wallet_handler = wallet_handler
-        self.longest_period = longest_period
-
+        self.__long_conditions = self.get_long_conditions()
+        self.__short_conditions = self.get_short_conditions()
+        self.__handle_positions = handle_positions
+        self.__longest_period = longest_period
+        self.__get_balance_delegate = get_balance_delegate
+        self.__change_balance_delegate = change_balance_delegate
 
     @abstractmethod
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
         pass
 
-
     @abstractmethod
     def get_take_profit(self, open_price: float, position_type: PositionType) -> float:
         pass
 
-
     @abstractmethod
-    def get_margin_investment(self):
+    def get_margin_investment(self) -> float:
         pass
 
+    @abstractmethod
+    def get_long_conditions(self) -> List[StrategyCondition]:
+        pass
+
+    @abstractmethod
+    def get_short_conditions(self) -> List[StrategyCondition]:
+        pass
 
     @staticmethod
     def __check_conditions(conditions) -> bool:
@@ -240,57 +231,65 @@ class Strategy(ABC):
                 return False
         return True
 
+    @staticmethod
+    def __reset_conditions(conditions):
+        for c in conditions:
+            c.reset()
 
     def update_state(self, frame, verbose: bool = False):
         candle = frame["k"]
         close_price = float(candle["c"])
 
-        if self.handle_positions:
+        if self.__handle_positions:
             # Check for positions that need to be closed
             to_remove = []
-            for pos in self.open_positions:
+            for pos in self.__open_positions:
                 should_close, won = pos.should_close(close_price)
                 if should_close:
                     pos.close(won, close_price)
-                    self.wallet_handler.change_balance(pos.profit + pos.investment)
+                    if self.__change_balance_delegate:
+                        self.__change_balance_delegate(pos.profit + pos.investment)
                     to_remove.append(pos)
-                    self.closed_positions.append(pos)
+                    self.__closed_positions.append(pos)
                     if verbose: print("Closed position: " + str(pos))
             # Remove all the closed positions
             for rem in to_remove:
-                self.open_positions.remove(rem)
+                self.__open_positions.remove(rem)
 
         if candle["x"]:
             self.closes.append(close_price)
             self.highs.append(float(candle["h"]))
             self.lows.append(float(candle["l"]))
 
-            if len(self.closes) >= self.longest_period: self.closes = self.closes[-self.longest_period:]
-            if len(self.highs) >= self.longest_period: self.highs = self.highs[-self.longest_period:]
-            if len(self.lows) >= self.longest_period: self.lows = self.lows[-self.longest_period:]
+            if len(self.closes) >= self.__longest_period: self.closes = self.closes[-self.__longest_period:]
+            if len(self.highs) >= self.__longest_period: self.highs = self.highs[-self.__longest_period:]
+            if len(self.lows) >= self.__longest_period: self.lows = self.lows[-self.__longest_period:]
             # Tick all conditions so they can update their internal state
-            for c in self.long_conditions:
+            for c in self.__long_conditions:
                 c.tick(frame)
 
-            for c in self.short_conditions:
+            for c in self.__short_conditions:
                 c.tick(frame)
 
-            if len(self.open_positions) < self.max_positions and self.wallet_handler.get_balance() > 0:
-                if self.__check_conditions(self.long_conditions):
-                    pos = Position(PositionType.LONG, not self.handle_positions)
+            if len(self.__open_positions) < self.max_positions and self.__get_balance_delegate() > 0:
+                if self.__check_conditions(self.__long_conditions):
                     investment = self.get_margin_investment()
-                    self.wallet_handler.change_balance(-investment)
-                    pos.open(candle["t"], close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG), investment)
-                    self.open_positions.append(pos)
+                    pos = Position(PositionType.LONG, candle["t"], close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG), investment)
+                    if self.__handle_positions and self.__change_balance_delegate:
+                        self.__change_balance_delegate(-investment)
+                    pos.open(not self.__handle_positions)
+                    self.__open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))
+                    self.__reset_conditions(self.__long_conditions)
 
-                if self.__check_conditions(self.short_conditions):
-                    pos = Position(PositionType.SHORT, not self.handle_positions)
+                if self.__check_conditions(self.__short_conditions):
                     investment = self.get_margin_investment()
-                    self.wallet_handler.change_balance(-investment)
-                    pos.open(candle["t"], close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT), investment)
-                    self.open_positions.append(pos)
+                    pos = Position(PositionType.SHORT, candle["t"], close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT), investment)
+                    if self.__handle_positions and self.__change_balance_delegate:
+                        self.__change_balance_delegate(-investment)
+                    pos.open(not self.__handle_positions)
+                    self.__open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))
-
+                    self.__reset_conditions(self.__short_conditions)
 
 # endregion
