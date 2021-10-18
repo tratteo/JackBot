@@ -87,29 +87,24 @@ class Position:
         self.closed = False
         self.investment = investment
         if self.handle_orders:
-            # TODO send open order
-            # TODO set limit order for stop loss and take profit
+            # TODO send open order, stop loss and take profit
             pass
 
 
-    def close(self, won: bool):
+    def close(self, won: bool, close_price: float):
         self.won = won
         self.closed = True
         if self.pos_type == PositionType.LONG:
             if won:
-                self.result_percentage = ((self.take_profit / self.open_price) - 1) * 100
+                self.result_percentage = ((close_price / self.open_price) - 1) * 100
             else:
-                self.result_percentage = ((self.stop_loss / self.open_price) - 1) * 100
+                self.result_percentage = ((close_price / self.open_price) - 1) * 100
         if self.pos_type == PositionType.SHORT:
             if won:
-                self.result_percentage = ((self.open_price / self.take_profit) - 1) * 100
+                self.result_percentage = ((self.open_price / close_price) - 1) * 100
             else:
-                self.result_percentage = ((self.open_price / self.stop_loss) - 1) * 100
+                self.result_percentage = ((self.open_price / close_price) - 1) * 100
         self.profit = self.investment * (self.result_percentage / 100)
-
-        if self.handle_orders:
-            # TODO send close order
-            pass
 
 
 # endregion
@@ -256,7 +251,7 @@ class Strategy(ABC):
             for pos in self.open_positions:
                 should_close, won = pos.should_close(close_price)
                 if should_close:
-                    pos.close(won)
+                    pos.close(won, close_price)
                     self.wallet_handler.change_balance(pos.profit + pos.investment)
                     to_remove.append(pos)
                     self.closed_positions.append(pos)
