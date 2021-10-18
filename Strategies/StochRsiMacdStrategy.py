@@ -18,8 +18,8 @@ class StochRsiMacdStrategy(Strategy):
     INTERVALS_TOLERANCE_NUMBER = 4
     INVESTMENT_RATE = 0.25
 
-    def __init__(self, get_balance_delegate, max_positions: int, handle_positions: bool = False, change_balance_delegate=None, longest_period: int = 200):
-        super().__init__(get_balance_delegate, max_positions, handle_positions, change_balance_delegate, longest_period)
+    def __init__(self, get_balance_delegate, handle_positions: bool = False, change_balance_delegate=None, longest_period: int = 200):
+        super().__init__(get_balance_delegate, self.MAX_OPEN_POSITIONS_NUMBER, handle_positions, change_balance_delegate, longest_period)
 
     def get_margin_investment(self):
         # TODO set a new margin investment strategy
