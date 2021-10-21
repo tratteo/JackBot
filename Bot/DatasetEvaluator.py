@@ -1,7 +1,7 @@
-import sys
+from typing import Callable
 
-from numpy import genfromtxt
-import tqdm
+import numpy
+
 from Bot.Core import Strategy
 
 OPEN_T: int = 0
@@ -40,25 +40,26 @@ class TestResult:
     def __init__(self):
         self.total_profit = 0
         self.days = 0
-        self.win_percentage = 0
-        self.apy = 0
+        self.win_ratio = 0
+        self.estimated_apy = 0
+        self.initial_balance = 0
         self.final_balance = 0
         self.opened_positions = 0
 
     @classmethod
     def construct(cls, strategy: Strategy, initial_balance: float, minute_candles: int):
         result = TestResult()
+        result.initial_balance = initial_balance
         result.total_profit = 0
         result.days = minute_candles / 1440
+        result.final_balance = strategy.get_balance_delegate()
         won = 0
         for c in strategy.closed_positions:
             result.total_profit += c.profit
             if c.won: won += 1
-        result.win_percentage = 0
-        if len(strategy.closed_positions) > 0:
-            result.win_percentage = won / len(strategy.closed_positions)
-        result.apy = ((((((((strategy.get_balance_delegate()) / initial_balance) - 1) * 100) / result.days) / 100) + 1) ** 365 - 1) * 100
-        result.final_balance = strategy.get_balance_delegate()
+        result.win_ratio = 0
+        if len(strategy.closed_positions) > 0: result.win_ratio = won / len(strategy.closed_positions)
+        result.estimated_apy = (((((((result.final_balance / initial_balance) - 1) * 100) / result.days) / 100) + 1) ** 365 - 1) * 100
         result.opened_positions = len(strategy.open_positions) + len(strategy.closed_positions)
         return result
 
@@ -68,11 +69,11 @@ class TestResult:
                "\n{:<20s}{:^4.3f}".format("Final balance: ", self.final_balance) + \
                "\n{:<20s}{:^4.3f}".format("Total profit: ", self.total_profit) + \
                "\n{:<20s}{:^4.3s}".format("Opened positions: ", str(self.opened_positions)) + \
-               "\n{:<20s}{:^4.3f}".format("Win rate: ", self.win_percentage * 100) + "%" + \
-               "\n{:<20s}{:^4.3f}".format("Apy: ", self.apy) + "%"
+               "\n{:<20s}{:^4.3f}".format("Win rate: ", self.win_ratio * 100) + "%" + \
+               "\n{:<20s}{:^4.3f}".format("Estimated apy: ", self.estimated_apy) + "%"
 
 
-def evaluate(strategy_class, initial_balance: float, data, verbose: bool = False, index: int = 0) -> TestResult:
+def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_report: Callable[[float], any] = None, verbose: bool = False, index: int = 0) -> [TestResult, int]:
     balance = initial_balance
 
     def change_balance(amount):
@@ -92,10 +93,10 @@ def evaluate(strategy_class, initial_balance: float, data, verbose: bool = False
     lows = []
     closes = []
 
-    strategy = strategy_class(get_balance, True, change_balance)
+    strategy.for_testing(change_balance, get_balance)
+    if verbose: print("[" + str(index) + "] Processing data")
 
-    if verbose: print("[" + str(index) + "] Processing data\n")
-    # with tqdm.tqdm(total = time_span, unit = "candles", file = sys.stdout) as bar:
+    reporter_span = 1000
     while epoch < time_span:
         if epoch + 1 >= len(data): break
         frame_message["k"]["c"] = str(data[epoch, CLOSE])
@@ -126,13 +127,12 @@ def evaluate(strategy_class, initial_balance: float, data, verbose: bool = False
             start_time = data[epoch + 1, 0]
 
         strategy.update_state(frame_message)
-        # if verbose: print(str(index) + ": " + str(epoch / time_span))
-        # bar.update(1)
-
+        if epoch % reporter_span == 0 and progress_report is not None: progress_report(reporter_span)
         epoch += 1
 
     for p in strategy.open_positions:
         change_balance(p.investment)
 
     res = TestResult.construct(strategy, initial_balance, len(data))
-    return res
+    if verbose: print("[" + str(index) + "] Done")
+    return res, index
