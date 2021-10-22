@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import unique, Enum
 
 # region Position
-from typing import List
+from typing import List, Callable
 
 
 @unique
@@ -15,7 +15,7 @@ class PositionType(Enum):
 
 class Position:
 
-    def __init__(self, pos_type: PositionType, open_date: datetime.date, open_price: float, take_profit: float, stop_loss: float, investment: float):
+    def __init__(self, pos_type: PositionType, open_date: datetime.date, open_price: float, take_profit: float, stop_loss: float, investment: float, ):
         self.result_percentage = 0
         self.pos_type = pos_type
         self.won = False
@@ -28,8 +28,8 @@ class Position:
         self.investment = investment
 
     def to_json(self):
-        return json.dumps(self, default=lambda o: o.__dict__,
-                          sort_keys=True, indent=4)
+        return json.dumps(self, default = lambda o: o.__dict__,
+                          sort_keys = True, indent = 4)
 
     def __str__(self):
         if self.closed:
@@ -154,7 +154,7 @@ class EventStrategyCondition(StrategyCondition):
         pass
 
 
-class DoubledStrategyCondition(StrategyCondition):
+class BoundedStrategyCondition(StrategyCondition):
 
     def __init__(self, valid_condition, invalid_condition, duration_tolerance: int = 0):
         super().__init__()
@@ -168,8 +168,7 @@ class DoubledStrategyCondition(StrategyCondition):
             self.satisfied = self.__valid_condition(frame)
             if self.satisfied: self.__current_tolerance = 0
         else:
-            self.satisfied = not self.__invalid_condition(
-                frame) and self.__current_tolerance < self.__duration_tolerance
+            self.satisfied = not self.__invalid_condition(frame) and self.__current_tolerance < self.__duration_tolerance
 
         if self.satisfied:
             self.__current_tolerance += 1
@@ -182,13 +181,12 @@ class DoubledStrategyCondition(StrategyCondition):
 
 # endregion
 
-
 # region Strategy
 
 
 class Strategy(ABC):
 
-    def __init__(self, get_balance_delegate, max_positions: int, handle_positions: bool = False, change_balance_delegate=None, longest_period: int = 200):
+    def __init__(self, get_balance_delegate: Callable[[], float], max_positions: int):
         self.max_positions = max_positions
         self.__long_valid = False
         self.__short_valid = False
@@ -199,10 +197,20 @@ class Strategy(ABC):
         self.lows = []
         self.__long_conditions = self.get_long_conditions()
         self.__short_conditions = self.get_short_conditions()
-        self.__handle_positions = handle_positions
-        self.__longest_period = longest_period
+        self.__testing = False
+        self.__longest_period = 150
         self.get_balance_delegate = get_balance_delegate
+        self.change_balance_delegate = None
+        self.__indicators = dict()
+
+    def for_testing(self, change_balance_delegate: Callable[[float], any], get_balance_delegate: Callable[[], float]):
+        self.__testing = True
         self.change_balance_delegate = change_balance_delegate
+        self.get_balance_delegate = get_balance_delegate
+
+    @abstractmethod
+    def compute_indicators(self) -> list[tuple[str, Callable[[], any]]]:
+        pass
 
     @abstractmethod
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
@@ -231,6 +239,9 @@ class Strategy(ABC):
                 return False
         return True
 
+    def get_indicator(self, key: str):
+        return self.__indicators.get(key)
+
     @staticmethod
     def __reset_conditions(conditions):
         for c in conditions:
@@ -240,7 +251,7 @@ class Strategy(ABC):
         candle = frame["k"]
         close_price = float(candle["c"])
 
-        if self.__handle_positions:
+        if self.__testing:
             # Check for positions that need to be closed
             to_remove = []
             for pos in self.open_positions:
@@ -261,6 +272,9 @@ class Strategy(ABC):
             self.highs.append(float(candle["h"]))
             self.lows.append(float(candle["l"]))
 
+            for p in self.compute_indicators():
+                self.__indicators[p[0]] = p[1]
+
             if len(self.closes) >= self.__longest_period: self.closes = self.closes[-self.__longest_period:]
             if len(self.highs) >= self.__longest_period: self.highs = self.highs[-self.__longest_period:]
             if len(self.lows) >= self.__longest_period: self.lows = self.lows[-self.__longest_period:]
@@ -275,9 +289,9 @@ class Strategy(ABC):
                 if self.__check_conditions(self.__long_conditions):
                     investment = self.get_margin_investment()
                     pos = Position(PositionType.LONG, candle["t"], close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG), investment)
-                    if self.__handle_positions and self.change_balance_delegate:
+                    if self.__testing and self.change_balance_delegate:
                         self.change_balance_delegate(-investment)
-                    pos.open(not self.__handle_positions)
+                    pos.open(not self.__testing)
                     self.open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))
                     self.__reset_conditions(self.__long_conditions)
@@ -285,9 +299,9 @@ class Strategy(ABC):
                 if self.__check_conditions(self.__short_conditions):
                     investment = self.get_margin_investment()
                     pos = Position(PositionType.SHORT, candle["t"], close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT), investment)
-                    if self.__handle_positions and self.change_balance_delegate:
+                    if self.__testing and self.change_balance_delegate:
                         self.change_balance_delegate(-investment)
-                    pos.open(not self.__handle_positions)
+                    pos.open(not self.__testing)
                     self.open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))
                     self.__reset_conditions(self.__short_conditions)
