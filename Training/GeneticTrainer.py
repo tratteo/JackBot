@@ -1,4 +1,5 @@
 import copy
+import math
 import multiprocessing
 import random
 import time
@@ -67,7 +68,8 @@ class _Individual:
             g.value = random.uniform(g.lower_bound, g.upper_bound)
 
     def calculate_fitness(self, test_result: TestResult) -> float:
-        fitness = test_result.estimated_apy * pow(test_result.win_ratio, 2)
+        self.test_result = test_result
+        fitness = math.exp(0.01 * test_result.estimated_apy) * pow(test_result.win_ratio, 1 / 2.5)
         if fitness < 0: fitness = 0
         self.fitness = fitness
         return self.fitness
@@ -116,7 +118,7 @@ class GeneticTrainer:
         epoch = 0
         data_index = 0
         data = data_arr[data_index]
-        iterations_on_data = 10
+        iterations_on_data = 1
         workers_pool = multiprocessing.Pool(processes = population_number)
         print("\nStarting " + str(population_number) + " parallel simulations on " + str(files[data_index]))
 
@@ -147,7 +149,6 @@ class GeneticTrainer:
 
             # Compute fitness and results
             for result, index in test_results:
-                population[index].test_result = result
                 avg_fitness += population[index].calculate_fitness(result)
 
             # Calculate champion
@@ -230,9 +231,9 @@ if __name__ == '__main__':
     GeneticTrainer.train(StochRsiMacdStrategy,
                          [(1, 3.5), (1, 3), (2, 10), (0.01, 0.2), (70, 90), (10, 30)],
                          "../GeneticTrainData",
-                         crossover_operator = "uniform",
+                         crossover_operator = "average",
                          crossover_rate = 0.75,
-                         mutation_type = "gaussian",
+                         mutation_type = "uniform",
                          mutation_rate = 0.2,
                          population_number = 8,
                          processes_number = 8)
