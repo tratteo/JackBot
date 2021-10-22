@@ -209,7 +209,7 @@ class Strategy(ABC):
         self.get_balance_delegate = get_balance_delegate
 
     @abstractmethod
-    def compute_indicators(self) -> list[tuple[str, Callable[[], any]]]:
+    def compute_indicators(self) -> list[tuple[str, any]]:
         pass
 
     @abstractmethod
