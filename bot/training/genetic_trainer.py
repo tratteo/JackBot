@@ -2,12 +2,14 @@ import copy
 import json
 import math
 import multiprocessing
+import os
 import random
 import time
 from itertools import repeat
 
 from numpy import genfromtxt
 
+import config
 from bot import dataset_evaluator
 from bot.core import TestWallet, Strategy
 from bot.dataset_evaluator import TestResult
@@ -22,15 +24,11 @@ class TrainingResult:
         return json.dumps(self.__dict__, default = lambda x: x.__dict__, indent = 4)
 
 
-class _Gene:
-    def __init__(self, lower_bound: float = float("-inf"), upper_bound: float = float("inf"), value: float = 0):
+class Gene:
+    def __init__(self, lower_bound: float = float("-inf"), upper_bound: float = float("inf"), value: float = None):
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        self.value = value
-
-    @classmethod
-    def random(cls, lower_bound: float = float("-inf"), upper_bound: float = float("inf")):
-        return cls(lower_bound, upper_bound, random.uniform(lower_bound, upper_bound))
+        self.value = value if value is not None else random.uniform(lower_bound, upper_bound)
 
     @property
     def value(self):
@@ -49,15 +47,14 @@ class _Gene:
             self._value = self.upper_bound
 
     def __str__(self):
-        return "[" + str(self.lower_bound) + ", " + str(self.upper_bound) + "]: " + "{:.3f}".format(self._value)
+        return "[" + str(self.lower_bound) + ", " + str(self.upper_bound) + "]: " + "{:.3f}".format(self.value)
 
 
 class _Individual:
 
-    def __init__(self, strategy_class: type, genome: list[_Gene], randomize: bool = False):
+    def __init__(self, strategy_class: type, genome: list[Gene], deepcopy: bool = True):
         # Deepcopy the genome
-        self.genome = copy.deepcopy(genome)
-        if randomize: self.randomize_genome()
+        self.genome = copy.deepcopy(genome) if deepcopy else genome
         # Load the parameters into the strategy and instantiate it
         self.strategy = strategy_class(TestWallet.factory(), *[g.value for g in self.genome])
         self.fitness = 0
@@ -74,13 +71,10 @@ class _Individual:
     def to_json(self):
         return json.dumps(self.__dict__, default = self.__serializer_guard, indent = 4)
 
-    def __serializer_guard(self, obj):
+    @staticmethod
+    def __serializer_guard(obj):
         if isinstance(obj, Strategy): return str(type(obj).__name__)
         return obj.__dict__
-
-    def randomize_genome(self):
-        for g in self.genome:
-            g.value = random.uniform(g.lower_bound, g.upper_bound)
 
     def calculate_fitness(self, test_result: TestResult) -> float:
         self.test_result = test_result
@@ -100,17 +94,17 @@ class GeneticTrainer:
         self.__batch_progress += p
         if self.__batch_progress >= self.__total_progress_steps * 0.02:
             print("\b", end = "", flush = True)
-            print("=>", end = "")
+            print("=>", end = "", flush = True)
             self.__batch_progress = 0
 
     @classmethod
-    def train(cls, strategy_class: type, genome_constraints: list[tuple[float, float]], data_path: str, **kwargs) -> TrainingResult:
+    def train(cls, strategy_class: type, ancestor_genome: list[Gene], data_path: str, **kwargs) -> TrainingResult:
         """Train the selected strategy hyperparameters.
 
         NOTE: len(genome_constraints) must be equal to the len(strategy_params)"""
-        return cls().__train_strategy(strategy_class, genome_constraints, data_path, **kwargs)
+        return cls().__train_strategy(strategy_class, ancestor_genome, data_path, **kwargs)
 
-    def __train_strategy(self, strategy_class: type, genome_constraints: list[tuple[float, float]], data_path: str, **kwargs) -> TrainingResult:
+    def __train_strategy(self, strategy_class: type, ancestor_genome: list[Gene], data_path: str, **kwargs) -> TrainingResult | None:
         # Optional parameters
         mutation_rate = kwargs.get("mutation_rate") if kwargs.get("mutation_rate") is not None else 0.1
         crossover_operator = kwargs.get("crossover_operator") if kwargs.get("crossover_operator") is not None else "uniform"
@@ -119,35 +113,41 @@ class GeneticTrainer:
         processes_number = kwargs.get("processes_number") if kwargs.get("processes_number") is not None else population_number if population_number <= 16 else 16
         mutation_type = kwargs.get("mutation_type") if kwargs.get("mutation_type") is not None else "uniform"
         max_iterations = kwargs.get("max_iterations") if kwargs.get("max_iterations") is not None else float("inf")
-        epoch_champion_rep = kwargs.get("epoch_champion_report") if kwargs.get("epoch_champion_report") is not None else ""
         data_delimiter = kwargs.get("data_delimiter") if kwargs.get("data_delimiter") is not None else ";"
 
+        epoch_champion_report_path = config.DEFAULT_REPORTS_PATH
         # Initialize
         population = []
         champion = None
         epoch = 0
         print("Loading " + data_path + "...")
         data = genfromtxt(data_path, delimiter = data_delimiter)
-        workers_pool = multiprocessing.Pool(processes = population_number)
-        print("Starting " + str(population_number) + " parallel simulations on " + str(data_path))
 
-        # region Core
+        workers_pool = multiprocessing.Pool(population_number)
+
+        print("Starting " + str(population_number) + " parallel simulations on " + str(data_path))
 
         # Instantiate random ancestors
         for i in range(population_number):
-            population.append(_Individual(strategy_class, [_Gene(lower_bound, upper_bound) for lower_bound, upper_bound in genome_constraints], True))
+            population.append(_Individual(strategy_class, ancestor_genome))
 
         while epoch < max_iterations:
             self.__batch_progress = 0
             epoch += 1
             avg_fitness = 0
-
             # Process data and run simulations
             print("Processing epoch " + str(epoch))
             self.__total_progress_steps = len(data) * processes_number
             print("|>", end = "", flush = True)
+
             start = time.time()
-            test_results = workers_pool.starmap(dataset_evaluator.evaluate, zip((i.strategy for i in population), repeat(1000), repeat(data), repeat(self.progress_report), repeat(False), range(0, population_number)))
+            try:
+                test_results_async = workers_pool.starmap_async(dataset_evaluator.evaluate, zip((i.strategy for i in population), repeat(1000), repeat(data), repeat(self.progress_report), repeat(False), range(0, population_number)))
+                test_results = test_results_async.get(timeout = 100)
+            except KeyboardInterrupt:
+                workers_pool.terminate()
+                workers_pool.join()
+                return None
             end = time.time()
             print("\nEpoch " + str(epoch) + " completed in " + str(end - start) + "s")
 
@@ -159,8 +159,14 @@ class GeneticTrainer:
             epoch_champion = max(population, key = lambda x: x.fitness)
             if champion is None or epoch_champion.fitness > champion.fitness:
                 champion = epoch_champion
-                if epoch_champion_rep != "":
-                    with open(epoch_champion_rep, "w") as outfile: outfile.write(champion.to_json())
+                if epoch_champion_report_path is not None:
+                    if not os.path.exists(epoch_champion_report_path):
+                        try:
+                            os.makedirs(epoch_champion_report_path)
+                        except FileExistsError:
+                            print("Unable to create " + epoch_champion_report_path + " dirs")
+                    with open(epoch_champion_report_path + strategy_class.__name__ + "_epoch_champion.rep", "w") as outfile:
+                        outfile.write(champion.to_json())
             avg_fitness /= population_number
             print("Average fitness: " + str(avg_fitness))
             print("Epoch max fitness: " + str(epoch_champion.fitness))
@@ -171,9 +177,9 @@ class GeneticTrainer:
             # Mutation
             self.__mutation(population, mutation_type, mutation_rate)
 
+        workers_pool.close()
         results = TrainingResult([g.value for g in champion.genome], type(champion.strategy).__name__)
         return results
-        # endregion
 
     @staticmethod
     def __selection_operator(population: list[_Individual]) -> [_Individual, _Individual]:
@@ -188,7 +194,7 @@ class GeneticTrainer:
         for i in range(len(population)):
             if random.random() < crossover_rate:
                 new_genome = self.__crossover_operator(crossover_operator, parent1, parent2)
-                new_population.append(_Individual(type(parent1.strategy), new_genome))
+                new_population.append(_Individual(type(parent1.strategy), new_genome, False))
             else:
                 if random.random() < 0.5:
                     new_population.append(parent1)
@@ -197,20 +203,20 @@ class GeneticTrainer:
         return new_population
 
     @staticmethod
-    def __crossover_operator(key: str, parent1: _Individual, parent2: _Individual) -> list[_Gene]:
+    def __crossover_operator(key: str, parent1: _Individual, parent2: _Individual) -> list[Gene]:
         new_genome = []
         match key:
             case "uniform":
                 # Uniform crossover operator
                 for g1, g2 in zip(parent1.genome, parent2.genome):
                     if random.random() < 0.5:
-                        new_genome.append(_Gene(g1.lower_bound, g1.upper_bound, g1.value))
+                        new_genome.append(Gene(g1.lower_bound, g1.upper_bound, g1.value))
                     else:
-                        new_genome.append(_Gene(g1.lower_bound, g1.upper_bound, g2.value))
+                        new_genome.append(Gene(g1.lower_bound, g1.upper_bound, g2.value))
             case "average":
                 # Average crossover operator
                 for g1, g2 in zip(parent1.genome, parent2.genome):
-                    new_genome.append(_Gene(g1.lower_bound, g1.upper_bound, (g1.value + g2.value) / 2))
+                    new_genome.append(Gene(g1.lower_bound, g1.upper_bound, (g1.value + g2.value) / 2))
         return new_genome
 
     # endregion
@@ -218,7 +224,6 @@ class GeneticTrainer:
     # region Mutation
 
     def __mutation(self, population: list[_Individual], mutation_type: str, mutation_rate: float):
-        count = 0
         for p in population:
             self.__mutation_operator(mutation_type, p, mutation_rate)
 

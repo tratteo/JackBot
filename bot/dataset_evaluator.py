@@ -91,38 +91,44 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
     if verbose: print("[" + str(index) + "] Processing data")
 
     reporter_span = 1000
-    while epoch < time_span:
-        if epoch + 1 >= len(data): break
-        frame_message["k"]["c"] = str(data[epoch, CLOSE])
-        frame_message["k"]["h"] = str(data[epoch, HIGH])
-        frame_message["k"]["l"] = str(data[epoch, LOW])
-        frame_message["k"]["t"] = str(data[epoch, OPEN_T])
-        frame_message["k"]["T"] = str(data[epoch, CLOSE_T])
-        frame_message["k"]["x"] = False
-        if high < data[epoch, HIGH]:
-            high = data[epoch, HIGH]
 
-        if low > data[epoch, LOW]:
-            low = data[epoch, LOW]
+    try:
 
-        if epoch != 0 and (epoch % candle_time) == candle_time - 1:
-            frame_message["k"]["x"] = True
-            frame_message["k"]["h"] = str(high)
-            frame_message["k"]["l"] = str(low)
-            frame_message["k"]["t"] = start_time
-            frame_message["k"]["T"] = data[epoch, CLOSE_T]
-            highs.append(float(high))
-            lows.append(float(low))
-            closes.append(float(data[epoch, CLOSE]))
+        while epoch < time_span:
+            if epoch + 1 >= len(data): break
+            frame_message["k"]["c"] = str(data[epoch, CLOSE])
+            frame_message["k"]["h"] = str(data[epoch, HIGH])
+            frame_message["k"]["l"] = str(data[epoch, LOW])
+            frame_message["k"]["t"] = str(data[epoch, OPEN_T])
+            frame_message["k"]["T"] = str(data[epoch, CLOSE_T])
+            frame_message["k"]["x"] = False
+            if high < data[epoch, HIGH]:
+                high = data[epoch, HIGH]
 
-            # Set defaults to next candle
-            high = data[epoch + 1, 2]
-            low = data[epoch + 1, 3]
-            start_time = data[epoch + 1, 0]
+            if low > data[epoch, LOW]:
+                low = data[epoch, LOW]
 
-        strategy.update_state(frame_message)
-        if epoch % reporter_span == 0 and progress_report is not None: progress_report(reporter_span)
-        epoch += 1
+            if epoch != 0 and (epoch % candle_time) == candle_time - 1:
+                frame_message["k"]["x"] = True
+                frame_message["k"]["h"] = str(high)
+                frame_message["k"]["l"] = str(low)
+                frame_message["k"]["t"] = start_time
+                frame_message["k"]["T"] = data[epoch, CLOSE_T]
+                highs.append(float(high))
+                lows.append(float(low))
+                closes.append(float(data[epoch, CLOSE]))
+
+                # Set defaults to next candle
+                high = data[epoch + 1, 2]
+                low = data[epoch + 1, 3]
+                start_time = data[epoch + 1, 0]
+
+            strategy.update_state(frame_message)
+            if epoch % reporter_span == 0 and progress_report is not None: progress_report(reporter_span)
+            epoch += 1
+    except (KeyboardInterrupt, SystemExit):
+        print("\nWorker " + str(index) + " interrupted", flush = True)
+        return None
     if progress_report is not None: progress_report(reporter_span - epoch)
     for p in strategy.open_positions:
         strategy.wallet_handler.balance += p.investment
