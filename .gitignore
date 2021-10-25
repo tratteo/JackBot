@@ -23,8 +23,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-Data/
-GeneticTrainData/
+data/
+genetic_data/
 MANIFEST
 
 # PyInstaller
@@ -32,7 +32,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
-*.report
+*.rep
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -50,6 +50,7 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+.reports/
 
 # Translations
 *.mo

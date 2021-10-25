@@ -1,0 +1,42 @@
+{
+  "strategy": "StochRsiMacdStrategy",
+  "parameters": [
+    {
+      "lower_bound": 0,
+      "upper_bound": 0
+    },
+    {
+      "lower_bound": 0,
+      "upper_bound": 0
+    },
+    {
+      "lower_bound": 0,
+      "upper_bound": 0
+    },
+    {
+      "lower_bound": 0,
+      "upper_bound": 0
+    },
+    {
+      "lower_bound": 0,
+      "upper_bound": 0
+    },
+    {
+      "lower_bound": 0,
+      "upper_bound": 0
+    }
+  ],
+  "hyperparameters": {
+    "mutation_rate": 0.1,
+    "crossover_operator": "uniform",
+    "crossover_rate": 0.85,
+    "population_number": 6,
+    "processes_number": 6,
+    "mutation_type": "gaussian",
+    "max_iterations": 1
+  },
+  "preferences": {
+    "epoch_champion_report": ".reports/champion.rep",
+    "data_delimiter": ";"
+  }
+}

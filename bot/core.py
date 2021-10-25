@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import unique, Enum
 
 # region Position
-from typing import List, Callable
+from typing import List
 
 
 @unique
@@ -181,15 +181,44 @@ class BoundedStrategyCondition(StrategyCondition):
 
 # endregion
 
-# region Strategy
+# region WalletHandlers
 
+class WalletHandler(ABC):
+
+    @abstractmethod
+    def get_balance(self):
+        pass
+
+
+class TestWallet(WalletHandler):
+
+    @classmethod
+    def factory(cls, initial_balance: float = 1000):
+        return TestWallet(initial_balance)
+
+    def __init__(self, initial_balance: float):
+        self.__balance = initial_balance
+
+    @property
+    def balance(self):
+        return self.__balance
+
+    def get_balance(self):
+        return self.balance
+
+    @balance.setter
+    def balance(self, value: float):
+        self.__balance = value
+
+
+# endregion
+
+# region Strategy
 
 class Strategy(ABC):
 
-    def __init__(self, get_balance_delegate: Callable[[], float], max_positions: int):
+    def __init__(self, wallet_handler: WalletHandler, max_positions: int):
         self.max_positions = max_positions
-        self.__long_valid = False
-        self.__short_valid = False
         self.open_positions = []
         self.closed_positions = []
         self.closes = []
@@ -197,16 +226,9 @@ class Strategy(ABC):
         self.lows = []
         self.__long_conditions = self.get_long_conditions()
         self.__short_conditions = self.get_short_conditions()
-        self.__testing = False
         self.__longest_period = 150
-        self.get_balance_delegate = get_balance_delegate
-        self.change_balance_delegate = None
+        self.wallet_handler = wallet_handler
         self.__indicators = dict()
-
-    def for_testing(self, change_balance_delegate: Callable[[float], any], get_balance_delegate: Callable[[], float]):
-        self.__testing = True
-        self.change_balance_delegate = change_balance_delegate
-        self.get_balance_delegate = get_balance_delegate
 
     @abstractmethod
     def compute_indicators(self) -> list[tuple[str, any]]:
@@ -251,21 +273,19 @@ class Strategy(ABC):
         candle = frame["k"]
         close_price = float(candle["c"])
 
-        if self.__testing:
-            # Check for positions that need to be closed
-            to_remove = []
-            for pos in self.open_positions:
-                should_close, won = pos.should_close(close_price)
-                if should_close:
-                    pos.close(won, close_price)
-                    if self.change_balance_delegate:
-                        self.change_balance_delegate(pos.profit + pos.investment)
-                    to_remove.append(pos)
-                    self.closed_positions.append(pos)
-                    if verbose: print("Closed position: " + str(pos))
-            # Remove all the closed positions
-            for rem in to_remove:
-                self.open_positions.remove(rem)
+        to_remove = []
+        for pos in self.open_positions:
+            should_close, won = pos.should_close(close_price)
+            if should_close:
+                pos.close(won, close_price)
+                if isinstance(self.wallet_handler, TestWallet):
+                    self.wallet_handler.balance += pos.profit + pos.investment
+                to_remove.append(pos)
+                self.closed_positions.append(pos)
+                if verbose: print("Closed position: " + str(pos))
+        # Remove all the closed positions
+        for rem in to_remove:
+            self.open_positions.remove(rem)
 
         if candle["x"]:
             self.closes.append(close_price)
@@ -285,13 +305,13 @@ class Strategy(ABC):
             for c in self.__short_conditions:
                 c.tick(frame)
 
-            if len(self.open_positions) < self.max_positions and self.get_balance_delegate() > 0:
+            if len(self.open_positions) < self.max_positions and self.wallet_handler.get_balance() > 0:
                 if self.__check_conditions(self.__long_conditions):
                     investment = self.get_margin_investment()
                     pos = Position(PositionType.LONG, candle["t"], close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG), investment)
-                    if self.__testing and self.change_balance_delegate:
-                        self.change_balance_delegate(-investment)
-                    pos.open(not self.__testing)
+                    if isinstance(self.wallet_handler, TestWallet):
+                        self.wallet_handler.balance -= investment
+                    pos.open()
                     self.open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))
                     self.__reset_conditions(self.__long_conditions)
@@ -299,9 +319,9 @@ class Strategy(ABC):
                 if self.__check_conditions(self.__short_conditions):
                     investment = self.get_margin_investment()
                     pos = Position(PositionType.SHORT, candle["t"], close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT), investment)
-                    if self.__testing and self.change_balance_delegate:
-                        self.change_balance_delegate(-investment)
-                    pos.open(not self.__testing)
+                    if isinstance(self.wallet_handler, TestWallet):
+                        self.wallet_handler.balance -= investment
+                    pos.open()
                     self.open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))
                     self.__reset_conditions(self.__short_conditions)

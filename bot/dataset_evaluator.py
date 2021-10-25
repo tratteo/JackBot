@@ -2,7 +2,7 @@ from typing import Callable
 
 import numpy
 
-from Bot.Core import Strategy
+from bot.core import Strategy, TestWallet
 
 OPEN_T: int = 0
 HIGH: int = 2
@@ -52,7 +52,7 @@ class TestResult:
         result.initial_balance = initial_balance
         result.total_profit = 0
         result.days = minute_candles / 1440
-        result.final_balance = strategy.get_balance_delegate()
+        result.final_balance = strategy.wallet_handler.get_balance()
         won = 0
         for c in strategy.closed_positions:
             result.total_profit += c.profit
@@ -65,7 +65,7 @@ class TestResult:
 
     def __str__(self):
         return "{:<20s}{:^4s}".format("Time span: ", str(int(self.days)) + " days") + \
-               "\n{:<20s}{:^4.3f}".format("Initial balance: ", self.final_balance - self.total_profit) + \
+               "\n{:<20s}{:^4.3f}".format("Initial balance: ", self.initial_balance) + \
                "\n{:<20s}{:^4.3f}".format("Final balance: ", self.final_balance) + \
                "\n{:<20s}{:^4.3f}".format("Total profit: ", self.total_profit) + \
                "\n{:<20s}{:^4.3s}".format("Opened positions: ", str(self.opened_positions)) + \
@@ -74,15 +74,6 @@ class TestResult:
 
 
 def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_report: Callable[[float], any] = None, verbose: bool = False, index: int = 0) -> [TestResult, int]:
-    balance = initial_balance
-
-    def change_balance(amount):
-        nonlocal balance
-        balance += amount
-
-    def get_balance():
-        return balance
-
     candle_time = 5
     epoch = 0
     high = data[epoch, HIGH]
@@ -93,7 +84,10 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
     lows = []
     closes = []
 
-    strategy.for_testing(change_balance, get_balance)
+    if not isinstance(strategy.wallet_handler, TestWallet):
+        print("Unable to test the strategy, the wallet handler is not an instance of a TestWallet")
+        return None
+
     if verbose: print("[" + str(index) + "] Processing data")
 
     reporter_span = 1000
@@ -129,9 +123,9 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
         strategy.update_state(frame_message)
         if epoch % reporter_span == 0 and progress_report is not None: progress_report(reporter_span)
         epoch += 1
-
+    if progress_report is not None: progress_report(reporter_span - epoch)
     for p in strategy.open_positions:
-        change_balance(p.investment)
+        strategy.wallet_handler.balance += p.investment
 
     res = TestResult.construct(strategy, initial_balance, len(data))
     if verbose: print("[" + str(index) + "] Done")

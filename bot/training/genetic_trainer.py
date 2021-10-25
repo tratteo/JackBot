@@ -1,17 +1,25 @@
 import copy
+import json
 import math
 import multiprocessing
 import random
 import time
 from itertools import repeat
-from os import listdir
-from os.path import isfile, join
 
 from numpy import genfromtxt
 
-from Bot import DatasetEvaluator
-from Bot.DatasetEvaluator import TestResult
-from Strategies.StochRsiMacdStrategy import StochRsiMacdStrategy
+from bot import dataset_evaluator
+from bot.core import TestWallet, Strategy
+from bot.dataset_evaluator import TestResult
+
+
+class TrainingResult:
+    def __init__(self, parameters: list[float], strategy: str):
+        self.parameters = parameters
+        self.strategy = strategy
+
+    def to_json(self):
+        return json.dumps(self.__dict__, default = lambda x: x.__dict__, indent = 4)
 
 
 class _Gene:
@@ -51,7 +59,7 @@ class _Individual:
         self.genome = copy.deepcopy(genome)
         if randomize: self.randomize_genome()
         # Load the parameters into the strategy and instantiate it
-        self.strategy = strategy_class(None, *[g.value for g in self.genome])
+        self.strategy = strategy_class(TestWallet.factory(), *[g.value for g in self.genome])
         self.fitness = 0
         self.test_result = None
 
@@ -63,13 +71,20 @@ class _Individual:
         s += "\n\nTest\n" + str(self.test_result)
         return s
 
+    def to_json(self):
+        return json.dumps(self.__dict__, default = self.__serializer_guard, indent = 4)
+
+    def __serializer_guard(self, obj):
+        if isinstance(obj, Strategy): return str(type(obj).__name__)
+        return obj.__dict__
+
     def randomize_genome(self):
         for g in self.genome:
             g.value = random.uniform(g.lower_bound, g.upper_bound)
 
     def calculate_fitness(self, test_result: TestResult) -> float:
         self.test_result = test_result
-        fitness = math.exp(0.01 * test_result.estimated_apy) * pow(test_result.win_ratio, 1 / 2.5)
+        fitness = math.exp(0.5 * (test_result.final_balance / test_result.initial_balance))  # * pow(test_result.win_ratio, 2)
         if fitness < 0: fitness = 0
         self.fitness = fitness
         return self.fitness
@@ -89,11 +104,13 @@ class GeneticTrainer:
             self.__batch_progress = 0
 
     @classmethod
-    def train(cls, strategy_class: type, genome_constraints: list[tuple[float, float]], data_folder: str, **kwargs):
-        cls().__train_strategy(strategy_class, genome_constraints, data_folder, **kwargs)
+    def train(cls, strategy_class: type, genome_constraints: list[tuple[float, float]], data_path: str, **kwargs) -> TrainingResult:
+        """Train the selected strategy hyperparameters.
 
-    def __train_strategy(self, strategy_class: type, genome_constraints: list[tuple[float, float]], data_folder: str, **kwargs):
+        NOTE: len(genome_constraints) must be equal to the len(strategy_params)"""
+        return cls().__train_strategy(strategy_class, genome_constraints, data_path, **kwargs)
 
+    def __train_strategy(self, strategy_class: type, genome_constraints: list[tuple[float, float]], data_path: str, **kwargs) -> TrainingResult:
         # Optional parameters
         mutation_rate = kwargs.get("mutation_rate") if kwargs.get("mutation_rate") is not None else 0.1
         crossover_operator = kwargs.get("crossover_operator") if kwargs.get("crossover_operator") is not None else "uniform"
@@ -101,49 +118,36 @@ class GeneticTrainer:
         population_number = kwargs.get("population_number") if kwargs.get("population_number") is not None else 8
         processes_number = kwargs.get("processes_number") if kwargs.get("processes_number") is not None else population_number if population_number <= 16 else 16
         mutation_type = kwargs.get("mutation_type") if kwargs.get("mutation_type") is not None else "uniform"
-
-        # Load data
-        print("Loading data from " + data_folder)
-        files = [f for f in listdir(data_folder) if isfile(join(data_folder, f))]
-        sorted(files, key = lambda f: str(f[0]) + str(f[1]))
-        data_arr = []
-        for s in files:
-            print("Loading " + s)
-            data_arr.append(genfromtxt(data_folder + "/" + s, delimiter = ','))
+        max_iterations = kwargs.get("max_iterations") if kwargs.get("max_iterations") is not None else float("inf")
+        epoch_champion_rep = kwargs.get("epoch_champion_report") if kwargs.get("epoch_champion_report") is not None else ""
+        data_delimiter = kwargs.get("data_delimiter") if kwargs.get("data_delimiter") is not None else ";"
 
         # Initialize
         population = []
         champion = None
-        iterations = float("inf")
         epoch = 0
-        data_index = 0
-        data = data_arr[data_index]
-        iterations_on_data = 1
+        print("Loading " + data_path + "...")
+        data = genfromtxt(data_path, delimiter = data_delimiter)
         workers_pool = multiprocessing.Pool(processes = population_number)
-        print("\nStarting " + str(population_number) + " parallel simulations on " + str(files[data_index]))
+        print("Starting " + str(population_number) + " parallel simulations on " + str(data_path))
 
         # region Core
 
         # Instantiate random ancestors
         for i in range(population_number):
             population.append(_Individual(strategy_class, [_Gene(lower_bound, upper_bound) for lower_bound, upper_bound in genome_constraints], True))
-        while epoch < iterations:
+
+        while epoch < max_iterations:
             self.__batch_progress = 0
             epoch += 1
             avg_fitness = 0
-            # Check whether to switch dataset
-            if epoch % iterations_on_data == 0:
-                data_index += 1
-                if data_index > len(data_arr) - 1: data_index = 0
-                data = data_arr[data_index]
-                print("Switching data to " + str(files[data_index]))
 
             # Process data and run simulations
-            print("Processing epoch " + str(epoch) + " on " + str(files[data_index]))
-            self.__total_progress_steps = len(data_arr[0]) * processes_number
-            print("|>", end = "")
+            print("Processing epoch " + str(epoch))
+            self.__total_progress_steps = len(data) * processes_number
+            print("|>", end = "", flush = True)
             start = time.time()
-            test_results = workers_pool.starmap(DatasetEvaluator.evaluate, zip((i.strategy for i in population), repeat(1000), repeat(data), repeat(self.progress_report), repeat(False), range(0, population_number)))
+            test_results = workers_pool.starmap(dataset_evaluator.evaluate, zip((i.strategy for i in population), repeat(1000), repeat(data), repeat(self.progress_report), repeat(False), range(0, population_number)))
             end = time.time()
             print("\nEpoch " + str(epoch) + " completed in " + str(end - start) + "s")
 
@@ -155,8 +159,8 @@ class GeneticTrainer:
             epoch_champion = max(population, key = lambda x: x.fitness)
             if champion is None or epoch_champion.fitness > champion.fitness:
                 champion = epoch_champion
-                with open("champion.report", "w") as outfile:
-                    outfile.write(str(champion))
+                if epoch_champion_rep != "":
+                    with open(epoch_champion_rep, "w") as outfile: outfile.write(champion.to_json())
             avg_fitness /= population_number
             print("Average fitness: " + str(avg_fitness))
             print("Epoch max fitness: " + str(epoch_champion.fitness))
@@ -167,17 +171,23 @@ class GeneticTrainer:
             # Mutation
             self.__mutation(population, mutation_type, mutation_rate)
 
+        results = TrainingResult([g.value for g in champion.genome], type(champion.strategy).__name__)
+        return results
         # endregion
+
+    @staticmethod
+    def __selection_operator(population: list[_Individual]) -> [_Individual, _Individual]:
+        sorted_pop = sorted(population, key = lambda x: x.fitness, reverse = True)
+        return sorted_pop[0], sorted_pop[1]
 
     # region Crossover
 
     def __crossover(self, population: list[_Individual], crossover_rate: float, crossover_operator: str) -> list[_Individual]:
         new_population = []
-        population.sort(key = lambda x: x.fitness, reverse = True)
-        parent1, parent2 = population[0], population[1]
+        parent1, parent2 = self.__selection_operator(population)
         for i in range(len(population)):
             if random.random() < crossover_rate:
-                new_genome = self.__apply_crossover_operator(crossover_operator, parent1, parent2)
+                new_genome = self.__crossover_operator(crossover_operator, parent1, parent2)
                 new_population.append(_Individual(type(parent1.strategy), new_genome))
             else:
                 if random.random() < 0.5:
@@ -186,7 +196,8 @@ class GeneticTrainer:
                     new_population.append(parent2)
         return new_population
 
-    def __apply_crossover_operator(self, key: str, parent1: _Individual, parent2: _Individual) -> list[_Gene]:
+    @staticmethod
+    def __crossover_operator(key: str, parent1: _Individual, parent2: _Individual) -> list[_Gene]:
         new_genome = []
         match key:
             case "uniform":
@@ -209,9 +220,10 @@ class GeneticTrainer:
     def __mutation(self, population: list[_Individual], mutation_type: str, mutation_rate: float):
         count = 0
         for p in population:
-            self.__apply_mutation_operator(mutation_type, p, mutation_rate)
+            self.__mutation_operator(mutation_type, p, mutation_rate)
 
-    def __apply_mutation_operator(self, key: str, individual: _Individual, mutation_rate: float):
+    @staticmethod
+    def __mutation_operator(key: str, individual: _Individual, mutation_rate: float):
         match key:
             case "uniform":
                 for g in individual.genome:
@@ -221,19 +233,7 @@ class GeneticTrainer:
                 for g in individual.genome:
                     if random.random() < mutation_rate:
                         val = g.upper_bound - g.lower_bound
-                        if val > 1000: val = 1000 / 5
-                        g.value += random.gauss(0, val / 5)
+                        if val > 1000: val = 1000 / 4
+                        g.value += random.gauss(0, val / 4)
 
     # endregion
-
-
-if __name__ == '__main__':
-    GeneticTrainer.train(StochRsiMacdStrategy,
-                         [(1, 3.5), (1, 3), (2, 10), (0.01, 0.2), (70, 90), (10, 30)],
-                         "../GeneticTrainData",
-                         crossover_operator = "average",
-                         crossover_rate = 0.75,
-                         mutation_type = "uniform",
-                         mutation_rate = 0.2,
-                         population_number = 8,
-                         processes_number = 8)

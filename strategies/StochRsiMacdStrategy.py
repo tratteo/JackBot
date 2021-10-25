@@ -1,7 +1,7 @@
 import numpy as np
 import talib as technical
 
-from Bot.Core import *
+from bot.core import *
 
 
 class StochRsiMacdStrategy(Strategy):
@@ -23,14 +23,14 @@ class StochRsiMacdStrategy(Strategy):
     RSI_PERIOD = 14
     MAX_OPEN_POSITIONS_NUMBER = 4
 
-    def __init__(self, get_balance_delegate: Callable[[], float] = None, *strategy_params):
+    def __init__(self, wallet_handler: WalletHandler, *strategy_params):
         self.risk_reward_ratio = strategy_params[0]
         self.atr_factor = strategy_params[1]
         self.intervals_tolerance = strategy_params[2]
         self.investment_rate = strategy_params[3]
         self.stoch_overbought = strategy_params[4]
         self.stoch_oversold = strategy_params[5]
-        super().__init__(get_balance_delegate, self.MAX_OPEN_POSITIONS_NUMBER)
+        super().__init__(wallet_handler, self.MAX_OPEN_POSITIONS_NUMBER)
 
     def compute_indicators(self) -> list[tuple[str, any]]:
         return [
@@ -45,7 +45,7 @@ class StochRsiMacdStrategy(Strategy):
 
     def get_margin_investment(self):
         # TODO set a new margin investment strategy
-        return self.get_balance_delegate() * self.investment_rate
+        return self.wallet_handler.get_balance() * self.investment_rate
 
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
         atr = self.get_indicator("atr")
@@ -53,12 +53,6 @@ class StochRsiMacdStrategy(Strategy):
             return open_price - (self.atr_factor * atr[-1])
         elif position_type == PositionType.SHORT:
             return open_price + (self.atr_factor * atr[-1])
-
-    def __str__(self):
-        return "R_R: " + "{:2.2f}".format(self.risk_reward_ratio) + \
-               ", ATR_F: " + "{:2.3f}".format(self.atr_factor) + \
-               ", I_T: " + "{:2.2f}".format(self.intervals_tolerance) + \
-               ", I_R: " + "{:2.3f}".format(self.investment_rate)
 
     def get_take_profit(self, open_price: float, position_type: PositionType) -> float:
         atr = self.get_indicator("atr")
