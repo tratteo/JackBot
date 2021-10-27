@@ -104,7 +104,7 @@ class GeneticTrainer:
         NOTE: len(genome_constraints) must be equal to the len(strategy_params)"""
         return cls().__train_strategy(strategy_class, ancestor_genome, data_path, **kwargs)
 
-    def __train_strategy(self, strategy_class: type, ancestor_genome: list[Gene], data_path: str, **kwargs) -> TrainingResult | None:
+    def __train_strategy(self, strategy_class: type, ancestor_genome: list[Gene], data_path: str, **kwargs) -> TrainingResult:
         # Optional parameters
         mutation_rate = kwargs.get("mutation_rate") if kwargs.get("mutation_rate") is not None else 0.1
         crossover_operator = kwargs.get("crossover_operator") if kwargs.get("crossover_operator") is not None else "uniform"
@@ -113,7 +113,7 @@ class GeneticTrainer:
         processes_number = kwargs.get("processes_number") if kwargs.get("processes_number") is not None else population_number if population_number <= 16 else 16
         mutation_type = kwargs.get("mutation_type") if kwargs.get("mutation_type") is not None else "uniform"
         max_iterations = kwargs.get("max_iterations") if kwargs.get("max_iterations") is not None else float("inf")
-        data_delimiter = kwargs.get("data_delimiter") if kwargs.get("data_delimiter") is not None else ";"
+
 
         epoch_champion_report_path = config.DEFAULT_REPORTS_PATH
         # Initialize
@@ -121,7 +121,7 @@ class GeneticTrainer:
         champion = None
         epoch = 0
         print("Loading " + data_path + "...")
-        data = genfromtxt(data_path, delimiter = data_delimiter)
+        data = genfromtxt(data_path, delimiter = config.DEFAULT_DELIMITER)
 
         workers_pool = multiprocessing.Pool(population_number)
 
@@ -205,18 +205,26 @@ class GeneticTrainer:
     @staticmethod
     def __crossover_operator(key: str, parent1: _Individual, parent2: _Individual) -> list[Gene]:
         new_genome = []
-        match key:
-            case "uniform":
-                # Uniform crossover operator
-                for g1, g2 in zip(parent1.genome, parent2.genome):
-                    if random.random() < 0.5:
-                        new_genome.append(Gene(g1.lower_bound, g1.upper_bound, g1.value))
-                    else:
-                        new_genome.append(Gene(g1.lower_bound, g1.upper_bound, g2.value))
-            case "average":
-                # Average crossover operator
-                for g1, g2 in zip(parent1.genome, parent2.genome):
-                    new_genome.append(Gene(g1.lower_bound, g1.upper_bound, (g1.value + g2.value) / 2))
+
+        if key == "uniform":
+            # Uniform crossover operator
+            for g1, g2 in zip(parent1.genome, parent2.genome):
+                if random.random() < 0.5:
+                    new_genome.append(Gene(g1.lower_bound, g1.upper_bound, g1.value))
+                else:
+                    new_genome.append(Gene(g1.lower_bound, g1.upper_bound, g2.value))
+        elif key == "average":
+            # Average crossover operator
+            for g1, g2 in zip(parent1.genome, parent2.genome):
+                new_genome.append(Gene(g1.lower_bound, g1.upper_bound, (g1.value + g2.value) / 2))
+
+        elif key == "s-point":
+            point = random.randint(0, len(parent1.genome) -1)
+            for i in parent1.genome[:point]:
+                new_genome.append(i)
+            for i in parent1.genome[point:]:
+                new_genome.append(i)
+
         return new_genome
 
     # endregion
@@ -229,16 +237,15 @@ class GeneticTrainer:
 
     @staticmethod
     def __mutation_operator(key: str, individual: _Individual, mutation_rate: float):
-        match key:
-            case "uniform":
-                for g in individual.genome:
-                    if random.random() < mutation_rate:
-                        g.value = random.uniform(g.lower_bound, g.upper_bound)
-            case "gaussian":
-                for g in individual.genome:
-                    if random.random() < mutation_rate:
-                        val = g.upper_bound - g.lower_bound
-                        if val > 1000: val = 1000 / 4
-                        g.value += random.gauss(0, val / 4)
+        if key == "uniform":
+            for g in individual.genome:
+                if random.random() < mutation_rate:
+                    g.value = random.uniform(g.lower_bound, g.upper_bound)
+        elif key == "average":
+            for g in individual.genome:
+                if random.random() < mutation_rate:
+                    val = g.upper_bound - g.lower_bound
+                    if val > 1000: val = 1000 / 4
+                    g.value += random.gauss(0, val / 4)
 
     # endregion
