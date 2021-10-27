@@ -255,7 +255,7 @@ class Strategy(ABC):
         pass
 
     @staticmethod
-    def __check_conditions(conditions) -> bool:
+    def __check_conditions(conditions: List[StrategyCondition]) -> bool:
         for c in conditions:
             if not c.satisfied:
                 return False
