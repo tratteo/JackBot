@@ -36,8 +36,6 @@ class CommandHandler:
         return True
 
 
-
-
 class CommandHandlerBuilder:
 
     def __init__(self):
@@ -54,11 +52,11 @@ class CommandHandlerBuilder:
             self.command_handler.helper_string += key + ': ' + helper + '\n'
         return self
 
-    def on_fail(self,fail_delegate):
+    def on_fail(self, fail_delegate: Callable[[str], None]):
         self.command_handler.fail_delegate = fail_delegate
         return self
 
-    def on_help(self,help_delegate):
+    def on_help(self, help_delegate: Callable[[str], None]):
         self.command_handler.help_delegate = help_delegate
         return self
 

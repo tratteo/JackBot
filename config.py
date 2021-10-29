@@ -8,7 +8,7 @@ API_SECRET = 'nuC2xLmP1tWM8gJg59R5eAi0yJDQjnVST7hH0sSaKrKe4l81UF15pRc3y2UYHA1A'
 # region Preferences
 
 DEFAULT_RESULTS_PATH = ".results/"
-DEFAULT_REPORTS_PATH = ".reports/"
 DEFAULT_DELIMITER = ";"
+MAX_PROCESSES_NUMBER = 16
 
 # endregion

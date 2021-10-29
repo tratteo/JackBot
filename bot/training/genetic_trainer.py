@@ -108,15 +108,24 @@ class GeneticTrainer:
         # Optional parameters
         mutation_rate = kwargs.get("mutation_rate") if kwargs.get("mutation_rate") is not None else 0.1
         crossover_operator = kwargs.get("crossover_operator") if kwargs.get("crossover_operator") is not None else "uniform"
-        crossover_rate = kwargs.get("crossover_rate") if kwargs.get("crossover_rate") is not None else 1
-        population_number = kwargs.get("population_number") if kwargs.get("population_number") is not None else 8
-        processes_number = kwargs.get("processes_number") if kwargs.get("processes_number") is not None else population_number if population_number <= 16 else 16
+        crossover_rate = kwargs.get("crossover_rate") if kwargs.get("crossover_rate") is not None else 0.85
+        population_number = kwargs.get("population_number") if kwargs.get("population_number") is not None else 6
+        processes_number = kwargs.get("processes_number") if kwargs.get("processes_number") is not None else population_number if population_number <= config.MAX_PROCESSES_NUMBER else config.MAX_PROCESSES_NUMBER
         mutation_type = kwargs.get("mutation_type") if kwargs.get("mutation_type") is not None else "uniform"
         max_iterations = kwargs.get("max_iterations") if kwargs.get("max_iterations") is not None else float("inf")
+        epoch_champion_report_path = kwargs.get("epoch_champion_report_path")
 
+        epoch_champion_report_folder = ""
+        if epoch_champion_report_path is not None:
+            index = epoch_champion_report_path.find('/')
+            if index != -1:
+                epoch_champion_report_folder = epoch_champion_report_path[0: index]
+                if not os.path.exists(epoch_champion_report_folder):
+                    try:
+                        os.makedirs(epoch_champion_report_folder)
+                    except FileExistsError:
+                        print("Unable to create " + epoch_champion_report_folder + " dirs")
 
-        epoch_champion_report_path = config.DEFAULT_REPORTS_PATH
-        # Initialize
         population = []
         champion = None
         epoch = 0
@@ -149,7 +158,7 @@ class GeneticTrainer:
                 workers_pool.join()
                 return None
             end = time.time()
-            print("\nEpoch " + str(epoch) + " completed in " + str(end - start) + "s")
+            print("\n\nEpoch " + str(epoch) + " completed in " + str(end - start) + "s")
 
             # Compute fitness and results
             for result, index in test_results:
@@ -160,18 +169,12 @@ class GeneticTrainer:
             if champion is None or epoch_champion.fitness > champion.fitness:
                 champion = epoch_champion
                 if epoch_champion_report_path is not None:
-                    if not os.path.exists(epoch_champion_report_path):
-                        try:
-                            os.makedirs(epoch_champion_report_path)
-                        except FileExistsError:
-                            print("Unable to create " + epoch_champion_report_path + " dirs")
-                    with open(epoch_champion_report_path + strategy_class.__name__ + "_epoch_champion.rep", "w") as outfile:
+                    with open(epoch_champion_report_path, "w") as outfile:
                         outfile.write(champion.to_json())
             avg_fitness /= population_number
             print("Average fitness: " + str(avg_fitness))
             print("Epoch max fitness: " + str(epoch_champion.fitness))
             print("Champion fitness: " + str(champion.fitness))
-            print("\n")
             # Crossover
             population = self.__crossover(population, crossover_rate, crossover_operator)
             # Mutation
@@ -219,7 +222,7 @@ class GeneticTrainer:
                 new_genome.append(Gene(g1.lower_bound, g1.upper_bound, (g1.value + g2.value) / 2))
 
         elif key == "s-point":
-            point = random.randint(0, len(parent1.genome) -1)
+            point = random.randint(0, len(parent1.genome) - 1)
             for i in parent1.genome[:point]:
                 new_genome.append(i)
             for i in parent1.genome[point:]:

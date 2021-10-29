@@ -5,7 +5,7 @@ import config
 from numpy import genfromtxt
 
 from bot import dataset_evaluator
-from bot.command.commandHandler import CommandHandler
+from bot.command.command_handler import CommandHandler
 from strategies.StochRsiMacdStrategy import *
 
 
@@ -17,13 +17,14 @@ def __try_get_json_attr(key: str, json_obj):
         return None
 
 
-def helper(helperstr: str):
-    print(helperstr,flush=True)
+def helper(helper_str: str):
+    print(helper_str, flush = True)
     exit(0)
 
-def failure(helperstr: str):
-    print('Wrong synthax \n')
-    print(helperstr,flush=True)
+
+def failure(helper_str: str):
+    print('Wrong syntax \n')
+    print(helper_str, flush = True)
     exit(1)
 
 
@@ -31,10 +32,9 @@ command_manager = CommandHandler.create() \
     .positional('Strategy file') \
     .positional('Dataset file') \
     .keyed('-o', 'Output file .res') \
-    .on_help(helper)\
+    .on_help(helper) \
     .on_fail(failure) \
     .build(sys.argv)
-
 
 with open(command_manager.get_p(0)) as file:
     data = json.load(file)
@@ -44,7 +44,7 @@ strategy_name = data["strategy"]
 strategy_class = getattr(importlib.import_module("strategies." + strategy_name), strategy_name)
 strategy = strategy_class(TestWallet.factory(), *data["parameters"])
 print("Evaluating...")
-res, index = dataset_evaluator.evaluate(strategy, 1000, genfromtxt(dataset, delimiter=config.DEFAULT_DELIMITER), None)
+res, index = dataset_evaluator.evaluate(strategy, 1000, genfromtxt(dataset, delimiter = config.DEFAULT_DELIMITER), None)
 print(res)
 
 out = command_manager.get_k('-o')
