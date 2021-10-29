@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import unique, Enum
 
 # region Position
-from typing import List
+from typing import List, Callable
 
 
 @unique
@@ -117,12 +117,12 @@ class StrategyCondition(ABC):
 
 class PerpetualStrategyCondition(StrategyCondition):
 
-    def __init__(self, condition):
+    def __init__(self, condition_delegate: Callable[[dict], bool]):
         super().__init__()
-        self.__condition = condition
+        self.__condition_delegate = condition_delegate
 
     def tick(self, frame):
-        self.satisfied = self.__condition(frame)
+        self.satisfied = self.__condition_delegate(frame)
         pass
 
     def reset(self):
@@ -132,15 +132,15 @@ class PerpetualStrategyCondition(StrategyCondition):
 
 class EventStrategyCondition(StrategyCondition):
 
-    def __init__(self, condition, tolerance_duration: int):
+    def __init__(self, condition_delegate: Callable[[dict], bool], tolerance_duration: int):
         super().__init__()
-        self.__condition = condition
+        self.__condition_delegate = condition_delegate
         self.__tolerance_duration = tolerance_duration
         self.__current_tolerance = 0
 
     def tick(self, frame):
         if not self.satisfied:
-            self.satisfied = self.__condition(frame)
+            self.satisfied = self.__condition_delegate(frame)
             if self.satisfied: self.__current_tolerance = 0
         else:
             self.satisfied = self.__current_tolerance <= self.__tolerance_duration
@@ -156,19 +156,19 @@ class EventStrategyCondition(StrategyCondition):
 
 class BoundedStrategyCondition(StrategyCondition):
 
-    def __init__(self, valid_condition, invalid_condition, duration_tolerance: int = 0):
+    def __init__(self, valid_condition_delegate: Callable[[dict], bool], invalid_condition_delegate: Callable[[dict], bool], duration_tolerance: int = 0):
         super().__init__()
-        self.__valid_condition = valid_condition
-        self.__invalid_condition = invalid_condition
+        self.__valid_condition_delegate = valid_condition_delegate
+        self.__invalid_condition_delegate = invalid_condition_delegate
         self.__duration_tolerance = duration_tolerance
         self.__current_tolerance = 0
 
     def tick(self, frame):
         if not self.satisfied:
-            self.satisfied = self.__valid_condition(frame)
+            self.satisfied = self.__valid_condition_delegate(frame)
             if self.satisfied: self.__current_tolerance = 0
         else:
-            self.satisfied = not self.__invalid_condition(frame) and self.__current_tolerance < self.__duration_tolerance
+            self.satisfied = not self.__invalid_condition_delegate(frame) and self.__current_tolerance < self.__duration_tolerance
 
         if self.satisfied:
             self.__current_tolerance += 1

@@ -41,7 +41,7 @@ with open(command_manager.get_p(0)) as file:
 
 dataset = command_manager.get_p(1)
 strategy_name = data["strategy"]
-strategy_class = getattr(importlib.import_module("strategies." + strategy_name), strategy_name)
+strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_PACKAGE + "." + strategy_name), strategy_name)
 strategy = strategy_class(TestWallet.factory(), *data["parameters"])
 print("Evaluating...")
 res, index = dataset_evaluator.evaluate(strategy, 1000, genfromtxt(dataset, delimiter = config.DEFAULT_DELIMITER), None)
