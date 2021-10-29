@@ -139,12 +139,15 @@ class GeneticTrainer:
 
             start = time.time()
             try:
-                test_results_async = workers_pool.starmap_async(dataset_evaluator.evaluate, zip([i.strategy for i in population], repeat(1000), repeat(data), repeat(self.progress_report), repeat(False), range(0, population_number)))
+                test_results_async = workers_pool.starmap_async(dataset_evaluator.evaluate, zip([i.strategy for i in population], repeat(1000), repeat(data), repeat(self.progress_report), repeat(False), range(population_number)))
                 test_results = test_results_async.get(timeout = 1000)
+                if test_results is None:
+                    break
+
             except KeyboardInterrupt:
                 workers_pool.terminate()
                 workers_pool.join()
-                return
+                break
             end = time.time()
             print("\n\nEpoch " + str(epoch) + " completed in " + str(end - start) + "s")
 
@@ -161,6 +164,9 @@ class GeneticTrainer:
                         outfile.write(epoch_champion.to_json())
                 with open(result_path, "w") as res_out_file:
                     res_out_file.write(TrainingResult([g.value for g in epoch_champion.genome], type(epoch_champion.strategy).__name__).to_json())
+                # print("Evaluating champion...")
+                # res, i = dataset_evaluator.evaluate(epoch_champion.strategy, 1000, data, None, False, 0)
+                # print(str(res))
 
             avg_fitness /= population_number
             print("Average fitness: " + str(avg_fitness))
@@ -172,7 +178,8 @@ class GeneticTrainer:
                 # Mutation
                 self.__mutation(population, mutation_type, mutation_rate)
 
-        workers_pool.close()
+        workers_pool.terminate()
+        workers_pool.join()
 
     @staticmethod
     def __selection_operator(population: list[_Individual]) -> [_Individual, _Individual]:

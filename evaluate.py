@@ -43,11 +43,13 @@ dataset = command_manager.get_p(1)
 strategy_name = data["strategy"]
 strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)
 strategy = strategy_class(TestWallet.factory(), *data["parameters"])
+print("Loading " + dataset + "...")
+data = genfromtxt(dataset, delimiter = config.DEFAULT_DELIMITER)
 print("Evaluating...")
-res, index = dataset_evaluator.evaluate(strategy, 1000, genfromtxt(dataset, delimiter = config.DEFAULT_DELIMITER))
+res, index = dataset_evaluator.evaluate(strategy, 1000, data)
 print(res)
 out = command_manager.get_k('-o')
-lib.create_folders_in_path(out, lambda: sys.exit(1))
 if out is not None:
+    lib.create_folders_in_path(out, lambda: sys.exit(1))
     with open(out, 'w') as file:
         file.write(str(res))

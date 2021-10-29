@@ -21,7 +21,7 @@ class StochRsiMacdStrategy(Strategy):
     STOCH_SLOW_K = 1
     STOCH_SLOW_D = 3
     RSI_PERIOD = 14
-    MAX_OPEN_POSITIONS_NUMBER = 4
+    MAX_OPEN_POSITIONS_NUMBER = 10
 
     def __init__(self, wallet_handler: WalletHandler, *strategy_params):
         self.risk_reward_ratio = strategy_params[0]
@@ -114,11 +114,11 @@ class StochRsiMacdStrategy(Strategy):
     def long_perpetual_condition(self, frame) -> bool:
         macd, signal, hist = self.get_indicator("macd")
         rsi = self.get_indicator("rsi")
-        return rsi[-1] > 50 and macd[-1] >= signal[-1]
+        return rsi[-1] > 50  # and macd[-1] >= signal[-1]
 
     def short_perpetual_condition(self, frame) -> bool:
         macd, signal, hist = self.get_indicator("macd")
         rsi = self.get_indicator("rsi")
-        return rsi[-1] < 50 and macd[-1] <= signal[-1]
+        return rsi[-1] < 50  # and macd[-1] <= signal[-1]
 
     # endregion

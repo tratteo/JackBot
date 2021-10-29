@@ -3,33 +3,39 @@
   "parameters": [
     {
       "lower_bound": 0.5,
-      "upper_bound": 5
+      "upper_bound": 5,
+      "_value": 2.645849796229246
     },
     {
       "lower_bound": 0.5,
-      "upper_bound": 5
+      "upper_bound": 5,
+      "_value": 4.883054836820396
     },
     {
       "lower_bound": 1,
-      "upper_bound": 10
+      "upper_bound": 10,
+      "_value": 9.10965691678936
     },
     {
       "lower_bound": 0.02,
-      "upper_bound": 0.15
+      "upper_bound": 0.15,
+      "_value": 0.11884768542945581
     },
     {
       "lower_bound": 70,
-      "upper_bound": 90
+      "upper_bound": 90,
+      "_value": 73.0384465703102
     },
     {
       "lower_bound": 10,
-      "upper_bound": 30
+      "upper_bound": 30,
+      "_value": 29.321622010478663
     }
   ],
   "hyperparameters": {
-    "mutation_rate": 0.15,
+    "mutation_rate": 0.1,
     "crossover_operator": "uniform",
-    "crossover_rate": 0.85,
+    "crossover_rate": 1,
     "population_number": 6,
     "processes_number": 6,
     "mutation_type": "uniform",

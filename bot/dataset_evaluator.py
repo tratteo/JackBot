@@ -74,7 +74,7 @@ class TestResult:
 
 
 def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_report: Callable[[float], any] = None, verbose: bool = False, index: int = 0) -> [TestResult, int]:
-    candle_time = 5
+    candle_time = 3
     epoch = 0
     high = data[epoch, HIGH]
     low = data[epoch, LOW]
@@ -93,7 +93,6 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
     reporter_span = 1000
 
     try:
-
         while epoch < time_span:
             if epoch + 1 >= len(data): break
             frame_message["k"]["c"] = str(data[epoch, CLOSE])
@@ -128,6 +127,8 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
             epoch += 1
     except (KeyboardInterrupt, SystemExit):
         print("\nWorker " + str(index) + " interrupted", flush = True)
+        for p in strategy.open_positions:
+            strategy.wallet_handler.balance += p.investment
         return None
     if progress_report is not None: progress_report(reporter_span - epoch)
     for p in strategy.open_positions:
