@@ -2,7 +2,6 @@ import copy
 import json
 import math
 import multiprocessing
-import os
 import random
 import time
 from itertools import repeat
@@ -78,7 +77,7 @@ class _Individual:
 
     def calculate_fitness(self, test_result: TestResult) -> float:
         self.test_result = test_result
-        fitness = math.exp(0.5 * (test_result.final_balance / test_result.initial_balance))  # * pow(test_result.win_ratio, 2)
+        fitness = math.exp(0.75 * ((test_result.final_balance / test_result.initial_balance) - 1))  # * pow(test_result.win_ratio, 2)
         if fitness < 0: fitness = 0
         self.fitness = fitness
         return self.fitness
@@ -98,13 +97,13 @@ class GeneticTrainer:
             self.__batch_progress = 0
 
     @classmethod
-    def train(cls, strategy_class: type, ancestor_genome: list[Gene], data_path: str, **kwargs) -> TrainingResult:
+    def train(cls, strategy_class: type, ancestor_genome: list[Gene], data_path: str, result_path: str, **kwargs) -> any:
         """Train the selected strategy hyperparameters.
 
         NOTE: len(genome_constraints) must be equal to the len(strategy_params)"""
-        return cls().__train_strategy(strategy_class, ancestor_genome, data_path, **kwargs)
+        return cls().__train_strategy(strategy_class, ancestor_genome, data_path, result_path, **kwargs)
 
-    def __train_strategy(self, strategy_class: type, ancestor_genome: list[Gene], data_path: str, **kwargs) -> TrainingResult:
+    def __train_strategy(self, strategy_class: type, ancestor_genome: list[Gene], data_path: str, result_path: str, **kwargs) -> any:
         # Optional parameters
         mutation_rate = kwargs.get("mutation_rate") if kwargs.get("mutation_rate") is not None else 0.1
         crossover_operator = kwargs.get("crossover_operator") if kwargs.get("crossover_operator") is not None else "uniform"
@@ -113,21 +112,10 @@ class GeneticTrainer:
         processes_number = kwargs.get("processes_number") if kwargs.get("processes_number") is not None else population_number if population_number <= config.MAX_PROCESSES_NUMBER else config.MAX_PROCESSES_NUMBER
         mutation_type = kwargs.get("mutation_type") if kwargs.get("mutation_type") is not None else "uniform"
         max_iterations = kwargs.get("max_iterations") if kwargs.get("max_iterations") is not None else float("inf")
-        epoch_champion_report_path = kwargs.get("epoch_champion_report_path")
-
-        epoch_champion_report_folder = ""
-        if epoch_champion_report_path is not None:
-            index = epoch_champion_report_path.find('/')
-            if index != -1:
-                epoch_champion_report_folder = epoch_champion_report_path[0: index]
-                if not os.path.exists(epoch_champion_report_folder):
-                    try:
-                        os.makedirs(epoch_champion_report_folder)
-                    except FileExistsError:
-                        print("Unable to create " + epoch_champion_report_folder + " dirs")
+        report_path = kwargs.get("report_path")
 
         population = []
-        champion = None
+        champion_fitness = 0
         epoch = 0
         print("Loading " + data_path + "...")
         data = genfromtxt(data_path, delimiter = config.DEFAULT_DELIMITER)
@@ -145,44 +133,46 @@ class GeneticTrainer:
             epoch += 1
             avg_fitness = 0
             # Process data and run simulations
-            print("Processing epoch " + str(epoch))
+            print("\nProcessing epoch " + str(epoch))
             self.__total_progress_steps = len(data) * processes_number
             print("|>", end = "", flush = True)
 
             start = time.time()
             try:
-                test_results_async = workers_pool.starmap_async(dataset_evaluator.evaluate, zip((i.strategy for i in population), repeat(1000), repeat(data), repeat(self.progress_report), repeat(False), range(0, population_number)))
-                test_results = test_results_async.get(timeout = 100)
+                test_results_async = workers_pool.starmap_async(dataset_evaluator.evaluate, zip([i.strategy for i in population], repeat(1000), repeat(data), repeat(self.progress_report), repeat(False), range(0, population_number)))
+                test_results = test_results_async.get(timeout = 1000)
             except KeyboardInterrupt:
                 workers_pool.terminate()
                 workers_pool.join()
-                return None
+                return
             end = time.time()
             print("\n\nEpoch " + str(epoch) + " completed in " + str(end - start) + "s")
 
             # Compute fitness and results
             for result, index in test_results:
-                avg_fitness += population[index].calculate_fitness(result)
+                avg_fitness += population.__getitem__(index).calculate_fitness(result)
 
             # Calculate champion
             epoch_champion = max(population, key = lambda x: x.fitness)
-            if champion is None or epoch_champion.fitness > champion.fitness:
-                champion = epoch_champion
-                if epoch_champion_report_path is not None:
-                    with open(epoch_champion_report_path, "w") as outfile:
-                        outfile.write(champion.to_json())
+            if epoch_champion.fitness > champion_fitness:
+                champion_fitness = epoch_champion.fitness
+                if report_path is not None:
+                    with open(report_path, "w") as outfile:
+                        outfile.write(epoch_champion.to_json())
+                with open(result_path, "w") as res_out_file:
+                    res_out_file.write(TrainingResult([g.value for g in epoch_champion.genome], type(epoch_champion.strategy).__name__).to_json())
+
             avg_fitness /= population_number
             print("Average fitness: " + str(avg_fitness))
-            print("Epoch max fitness: " + str(epoch_champion.fitness))
-            print("Champion fitness: " + str(champion.fitness))
-            # Crossover
-            population = self.__crossover(population, crossover_rate, crossover_operator)
-            # Mutation
-            self.__mutation(population, mutation_type, mutation_rate)
+            print("Max fitness: " + str(epoch_champion.fitness))
+            print("Champion fitness: " + str(champion_fitness))
+            if epoch < max_iterations:
+                # Crossover
+                population = self.__crossover(population, crossover_rate, crossover_operator)
+                # Mutation
+                self.__mutation(population, mutation_type, mutation_rate)
 
         workers_pool.close()
-        results = TrainingResult([g.value for g in champion.genome], type(champion.strategy).__name__)
-        return results
 
     @staticmethod
     def __selection_operator(population: list[_Individual]) -> [_Individual, _Individual]:

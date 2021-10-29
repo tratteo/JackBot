@@ -51,7 +51,7 @@ class TestResult:
         result = TestResult()
         result.initial_balance = initial_balance
         result.total_profit = 0
-        result.days = minute_candles / 1440
+        result.days = float(minute_candles) / 1440
         result.final_balance = strategy.wallet_handler.get_balance()
         won = 0
         for c in strategy.closed_positions:
