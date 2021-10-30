@@ -6,6 +6,7 @@ from numpy import genfromtxt
 
 from bot import dataset_evaluator
 from bot.command.command_handler import CommandHandler
+from bot.lib import ProgressBar
 from strategies.StochRsiMacdStrategy import *
 
 
@@ -46,7 +47,9 @@ strategy = strategy_class(TestWallet.factory(), *data["parameters"])
 print("Loading " + dataset + "...")
 data = genfromtxt(dataset, delimiter = config.DEFAULT_DELIMITER)
 print("Evaluating...")
-res, index = dataset_evaluator.evaluate(strategy, 1000, data)
+progress_bar = ProgressBar.create(len(data)).width(50).build()
+res, index = dataset_evaluator.evaluate(strategy, 1000, data, progress_report = progress_bar.step)
+progress_bar.dispose()
 print(res)
 out = command_manager.get_k('-o')
 if out is not None:

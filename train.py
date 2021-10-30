@@ -1,11 +1,11 @@
 import importlib
-import os
 import sys
 
 import config
-from bot.command.command_handler import CommandHandler
-from bot.training.genetic_trainer import GeneticTrainer, Gene
 from bot import lib
+from bot.command.command_handler import CommandHandler
+from bot.training import genetic_trainer
+from bot.training.genetic_trainer import Gene
 from strategies.StochRsiMacdStrategy import *
 
 
@@ -18,13 +18,13 @@ def __try_get_json_attr(key: str, json_obj):
 
 
 def helper(helper_str: str):
-    print(helper_str)
+    print(helper_str, flush = True)
     exit(0)
 
 
 def failure(helper_str: str):
-    print('Wrong syntax \n')
-    print(helper_str)
+    print('Wrong syntax \n', flush = True)
+    print(helper_str, flush = True)
     exit(1)
 
 
@@ -57,12 +57,12 @@ if report_path is not None:
     lib.create_folders_in_path(report_path)
 
 if __name__ == '__main__':
-    GeneticTrainer.train(strategy_class, genome, dataset, result_path,
-                         crossover_operator = __try_get_json_attr("crossover_operator", hyperparameters),
-                         crossover_rate = __try_get_json_attr("crossover_rate", hyperparameters),
-                         mutation_type = __try_get_json_attr("mutation_type", hyperparameters),
-                         mutation_rate = __try_get_json_attr("mutation_rate", hyperparameters),
-                         population_number = __try_get_json_attr("population_number", hyperparameters),
-                         processes_number = __try_get_json_attr("processes_number", hyperparameters),
-                         max_iterations = __try_get_json_attr("max_iterations", hyperparameters),
-                         report_path = report_path)
+    genetic_trainer.train_strategy(strategy_class, genome, dataset, result_path,
+                                   crossover_operator = __try_get_json_attr("crossover_operator", hyperparameters),
+                                   crossover_rate = __try_get_json_attr("crossover_rate", hyperparameters),
+                                   mutation_type = __try_get_json_attr("mutation_type", hyperparameters),
+                                   mutation_rate = __try_get_json_attr("mutation_rate", hyperparameters),
+                                   population_number = __try_get_json_attr("population_number", hyperparameters),
+                                   processes_number = __try_get_json_attr("processes_number", hyperparameters),
+                                   max_iterations = __try_get_json_attr("max_iterations", hyperparameters),
+                                   report_path = report_path)

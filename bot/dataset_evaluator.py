@@ -73,7 +73,7 @@ class TestResult:
                "\n{:<20s}{:^4.3f}".format("Estimated apy: ", self.estimated_apy) + "%"
 
 
-def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_report: Callable[[float], any] = None, verbose: bool = False, index: int = 0) -> [TestResult, int]:
+def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_report, verbose: bool = False, index: int = 0) -> [TestResult, int]:
     candle_time = 3
     epoch = 0
     high = data[epoch, HIGH]
@@ -86,11 +86,11 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
 
     if not isinstance(strategy.wallet_handler, TestWallet):
         print("Unable to test the strategy, the wallet handler is not an instance of a TestWallet")
-        return None
+        return None, index
 
     if verbose: print("[" + str(index) + "] Processing data")
 
-    reporter_span = 1000
+    reporter_span = 5000
 
     try:
         while epoch < time_span:
@@ -129,8 +129,8 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
         print("\nWorker " + str(index) + " interrupted", flush = True)
         for p in strategy.open_positions:
             strategy.wallet_handler.balance += p.investment
-        return None
-    if progress_report is not None: progress_report(reporter_span - epoch)
+        return None, index
+    if progress_report is not None: progress_report(time_span - epoch)
     for p in strategy.open_positions:
         strategy.wallet_handler.balance += p.investment
 
