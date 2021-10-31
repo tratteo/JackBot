@@ -116,7 +116,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
         progress_bar.reset()
         start = time.time()
         try:
-            test_results = workers_pool.starmap(dataset_evaluator.evaluate, zip([i.strategy for i in population], repeat(1000), repeat(data), repeat(progress_bar.step), repeat(False), range(population_number)))
+            test_results = workers_pool.starmap(dataset_evaluator.evaluate, zip([i.strategy for i in population], repeat(1000), repeat(data), repeat(progress_bar.step), repeat(1440), range(population_number)))
             # test_results = test_results_async.get(timeout = 1000)
             if test_results is None:
                 break

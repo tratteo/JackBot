@@ -3,6 +3,31 @@ import sys
 from typing import Callable
 
 
+def get_minutes_from_flag(flag: str):
+    if flag == "1m":
+        return 1
+    if flag == "3m":
+        return 3
+    if flag == "5m":
+        return 5
+    if flag == "10m":
+        return 10
+    if flag == "15m":
+        return 15
+    if flag == "30m":
+        return 30
+    if flag == "1h":
+        return 60
+    if flag == "4h":
+        return 240
+    if flag == "1d":
+        return 1440
+    if flag == "1w":
+        return 10080
+    if flag == "1M":
+        return 43200
+
+
 def create_folders_in_path(path: str, fail_delegate: Callable[[], any] = None):
     index = path.find('/')
     if index != -1:

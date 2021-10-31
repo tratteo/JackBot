@@ -73,7 +73,7 @@ class TestResult:
                "\n{:<20s}{:^4.3f}".format("Estimated apy: ", self.estimated_apy) + "%"
 
 
-def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_report, verbose: bool = False, index: int = 0) -> [TestResult, int]:
+def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_delegate, balance_update_interval: int = 1440, index: int = 0) -> [TestResult, list[float], int]:
     candle_time = 3
     epoch = 0
     high = data[epoch, HIGH]
@@ -83,14 +83,12 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
     highs = []
     lows = []
     closes = []
-
+    balance_trend = []
     if not isinstance(strategy.wallet_handler, TestWallet):
         print("Unable to test the strategy, the wallet handler is not an instance of a TestWallet")
         return None, index
 
-    if verbose: print("[" + str(index) + "] Processing data")
-
-    reporter_span = 5000
+    progress_reporter_span = 5000
 
     try:
         while epoch < time_span:
@@ -121,19 +119,21 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
                 high = data[epoch + 1, 2]
                 low = data[epoch + 1, 3]
                 start_time = data[epoch + 1, 0]
-
+            if epoch % balance_update_interval == 0: balance_trend.append(strategy.wallet_handler.get_balance())
             strategy.update_state(frame_message)
-            if epoch % reporter_span == 0 and progress_report is not None: progress_report(reporter_span)
+            if epoch % progress_reporter_span == 0 and progress_delegate is not None: progress_delegate(progress_reporter_span)
             epoch += 1
     except (KeyboardInterrupt, SystemExit):
         print("\nWorker " + str(index) + " interrupted", flush = True)
         for p in strategy.open_positions:
             strategy.wallet_handler.balance += p.investment
-        return None, index
-    if progress_report is not None: progress_report(time_span - epoch)
+        return None, balance_trend, index
+
+    if progress_delegate is not None: progress_delegate(time_span - epoch)
+
     for p in strategy.open_positions:
         strategy.wallet_handler.balance += p.investment
 
+    balance_trend.append(strategy.wallet_handler.get_balance())
     res = TestResult.construct(strategy, initial_balance, len(data))
-    if verbose: print("[" + str(index) + "] Done")
-    return res, index
+    return res, balance_trend, index
