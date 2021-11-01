@@ -35,16 +35,11 @@ class Gene:
         return self._value
 
     @value.setter
-    def value(self, value: float):
-        if self.lower_bound < value:
-            self._value = value
+    def value(self, val: float):
+        if self.lower_bound < val < self.upper_bound:
+            self._value = val
         else:
-            self._value = self.lower_bound
-
-        if self.upper_bound > value:
-            self._value = value
-        else:
-            self._value = self.upper_bound
+            self._value = self.lower_bound if val < self.lower_bound else self.upper_bound
 
     def __str__(self):
         return "[" + str(self.lower_bound) + ", " + str(self.upper_bound) + "]: " + "{:.3f}".format(self.value)
@@ -80,11 +75,7 @@ class _Individual:
                 val *= 1.25
             positions_percentage += val
         balance_ratio = test_result.final_balance / test_result.initial_balance
-        decaying_factor = 1
-        sign = -1 if balance_ratio < 0 or positions_percentage < 0 else 1
-        if balance_ratio < 0 and positions_percentage < 0:
-            decaying_factor = 2
-        self.fitness = math.exp(sign * decaying_factor * (math.pow(abs(balance_ratio), 1) * abs(positions_percentage) * math.pow(test_result.win_ratio + 1, 3)) / (288 * test_result.days))
+        self.fitness = math.exp((math.pow(abs(balance_ratio), 1.5) * positions_percentage * math.pow(test_result.win_ratio + 1, 2)) / (288 * test_result.days))
         if self.fitness < 0: self.fitness = 0
         return self.fitness
 

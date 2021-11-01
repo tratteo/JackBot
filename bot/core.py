@@ -80,7 +80,6 @@ class Position:
         return False, False
 
     def open(self, wallet_handler):
-        print("opened")
         try:
             if isinstance(wallet_handler, BinanceWallet):
                 options = wallet_handler.options
@@ -94,10 +93,10 @@ class Position:
                 #    pair = pair + "UP" +  options["second"]
 
                 self.order_info = wallet_handler.client.create_order(
-                    symbol= pair,
-                    side='BUY',
-                    type='MARKET',
-                    quantity=self.investment
+                    symbol = pair,
+                    side = 'BUY',
+                    type = 'MARKET',
+                    quantity = self.investment
                 )
 
         except BinanceAPIException as e:
@@ -108,7 +107,6 @@ class Position:
             print(e)
 
     def close(self, won: bool, close_price: float):
-        print("closed")
         self.won = won
         self.closed = True
 
@@ -121,6 +119,7 @@ class Position:
 
     def get_order_info(self):
         print(self.order_info)
+
 
 # endregion
 
@@ -225,9 +224,8 @@ class BinanceWallet(WalletHandler):
         self.client.API_URL = 'https://testnet.binance.vision/api'
 
     def get_balance(self):
-        print(self.client.get_asset_balance(asset='ETH')["free"])
-        return float(self.client.get_asset_balance(asset='ETH')["free"])
-
+        print(self.client.get_asset_balance(asset = 'ETH')["free"])
+        return float(self.client.get_asset_balance(asset = 'ETH')["free"])
 
 
 class TestWallet(WalletHandler):
