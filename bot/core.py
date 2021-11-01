@@ -2,6 +2,10 @@ import json
 from abc import abstractmethod, ABC
 from datetime import datetime
 from enum import unique, Enum
+from binance.client import Client
+from binance.exceptions import BinanceAPIException, BinanceOrderException
+
+import config
 
 # region Position
 from typing import List, Callable
@@ -26,6 +30,7 @@ class Position:
         self.stop_loss = stop_loss
         self.closed = False
         self.investment = investment
+        self.order_info = None
 
     def to_json(self):
         return json.dumps(self, default = lambda o: o.__dict__,
@@ -74,20 +79,48 @@ class Position:
                 pass
         return False, False
 
-    def open(self, handle_orders: bool = True):
-        if handle_orders:
-            # TODO send open order, stop loss and take profit
-            pass
+    def open(self, wallet_handler):
+        print("opened")
+        try:
+            if isinstance(wallet_handler, BinanceWallet):
+                options = wallet_handler.options
+
+                pair = options["first"] + options["second"]
+                # Finchè UP e DOWN non sono disponibili
+
+                # if self.pos_type == PositionType.SHORT:
+                #     pair = pair + "DOWN" + options["second"]
+                # if self.pos_type == PositionType.LONG:
+                #    pair = pair + "UP" +  options["second"]
+
+                self.order_info = wallet_handler.client.create_order(
+                    symbol= pair,
+                    side='BUY',
+                    type='MARKET',
+                    quantity=self.investment
+                )
+
+        except BinanceAPIException as e:
+            # error handling goes here
+            print(e)
+        except BinanceOrderException as e:
+            # error handling goes here
+            print(e)
 
     def close(self, won: bool, close_price: float):
+        print("closed")
         self.won = won
         self.closed = True
+
         if self.pos_type == PositionType.LONG:
             self.result_percentage = ((close_price / self.open_price) - 1) * 100
         if self.pos_type == PositionType.SHORT:
             self.result_percentage = ((self.open_price / close_price) - 1) * 100
+
         self.profit = self.investment * (self.result_percentage / 100)
 
+    def get_order_info(self):
+        print(self.order_info)
 
 # endregion
 
@@ -182,6 +215,19 @@ class WalletHandler(ABC):
     @abstractmethod
     def get_balance(self):
         pass
+
+
+class BinanceWallet(WalletHandler):
+
+    def __init__(self, options, api_key, api_secret):
+        self.options = options
+        self.client = Client(api_key, api_secret)
+        self.client.API_URL = 'https://testnet.binance.vision/api'
+
+    def get_balance(self):
+        print(self.client.get_asset_balance(asset='ETH')["free"])
+        return float(self.client.get_asset_balance(asset='ETH')["free"])
+
 
 
 class TestWallet(WalletHandler):
@@ -305,7 +351,7 @@ class Strategy(ABC):
                     pos = Position(PositionType.LONG, candle["t"], close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG), investment)
                     if isinstance(self.wallet_handler, TestWallet):
                         self.wallet_handler.balance -= investment
-                    pos.open()
+                    pos.open(self.wallet_handler)
                     self.open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))
                     self.__reset_conditions(self.__long_conditions)
@@ -315,7 +361,7 @@ class Strategy(ABC):
                     pos = Position(PositionType.SHORT, candle["t"], close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT), investment)
                     if isinstance(self.wallet_handler, TestWallet):
                         self.wallet_handler.balance -= investment
-                    pos.open()
+                    pos.open(self.wallet_handler)
                     self.open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))
                     self.__reset_conditions(self.__short_conditions)
