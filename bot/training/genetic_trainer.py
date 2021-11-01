@@ -71,11 +71,10 @@ class _Individual:
         positions_percentage = 0
         for p in test_result.closed_positions:
             val = p.result_percentage
-            if val < 0:
-                val *= 1.25
             positions_percentage += val
         balance_ratio = test_result.final_balance / test_result.initial_balance
-        self.fitness = math.exp((math.pow(abs(balance_ratio), 1.5) * positions_percentage * math.pow(test_result.win_ratio + 1, 2)) / (288 * test_result.days))
+        #self.fitness = math.exp((math.pow(abs(balance_ratio), 1.25) * positions_percentage * math.pow(test_result.win_ratio + 1, 2.75)) / (288 * test_result.days))
+        self.fitness = math.exp(positions_percentage * math.pow(test_result.win_ratio + 1, 1.5) / test_result.days)
         if self.fitness < 0: self.fitness = 0
         return self.fitness
 
