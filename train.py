@@ -33,6 +33,7 @@ strategy_name = data["strategy"]
 strategy_class = getattr(importlib.import_module("strategies." + strategy_name), strategy_name)
 genome = [Gene(t["lower_bound"], t["upper_bound"], __try_get_json_attr("_value", t)) for t in data["parameters"]]
 hyperparameters = data["hyperparameters"]
+
 if __name__ == '__main__':
     res = GeneticTrainer.train(strategy_class, genome, dataset,
                                crossover_operator = __try_get_json_attr("crossover_operator", hyperparameters),

@@ -89,6 +89,7 @@ class StochRsiMacdStrategy(Strategy):
         stoch_k, stoch_d = self.get_indicator("stoch")
         last_stoch_k = stoch_k[-1]
         last_stoch_d = stoch_d[-1]
+
         return last_stoch_k < self.stoch_oversold and last_stoch_d < self.stoch_oversold
 
     def short_cancel(self, frame) -> bool:
