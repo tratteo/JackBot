@@ -24,21 +24,21 @@
     {
       "lower_bound": 70,
       "upper_bound": 90,
-      "_value": 75
+      "_value": 80
     },
     {
       "lower_bound": 10,
       "upper_bound": 30,
-      "_value": 25
+      "_value": 30
     }
   ],
   "hyperparameters": {
-    "mutation_rate": 0.2,
-    "crossover_operator": "average",
+    "mutation_rate": 0.175,
+    "crossover_operator": "uniform",
     "crossover_rate": 1,
-    "population_number": 4,
-    "processes_number": 4,
+    "population_number": 6,
+    "processes_number": 6,
     "mutation_type": "uniform",
-    "max_iterations": 100
+    "max_iterations": 200
   }
 }

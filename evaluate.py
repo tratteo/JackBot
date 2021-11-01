@@ -79,7 +79,7 @@ if plot_arg is not None:
     plot.legend()
     step = balance_len / 40 if balance_len > 80 else 1
     plot.xticks(np.arange(start = 0, stop = len(balance) + 1, step = int(step)))
-    step = (balance_max - balance_min) / 5 if (balance_max - balance_min) / 4 > 25 else 25
+    step = (balance_max - balance_min) / 10 if (balance_max - balance_min) / 10 > 1 else 1
     plot.yticks(np.arange(start = balance_min, stop = balance_max, step = step))
     plot.grid()
     plot.show()
