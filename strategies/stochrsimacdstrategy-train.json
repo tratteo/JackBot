@@ -4,40 +4,40 @@
     {
       "lower_bound": 0.5,
       "upper_bound": 5,
-      "_value": 2.645849796229246
+      "_value": 2
     },
     {
       "lower_bound": 0.5,
       "upper_bound": 5,
-      "_value": 4.883054836820396
+      "_value": 3
     },
     {
       "lower_bound": 1,
       "upper_bound": 10,
-      "_value": 9.10965691678936
+      "_value": 6
     },
     {
-      "lower_bound": 0.02,
-      "upper_bound": 0.15,
-      "_value": 0.11884768542945581
+      "lower_bound": 0.01,
+      "upper_bound": 0.1,
+      "_value": 0.025
     },
     {
       "lower_bound": 70,
       "upper_bound": 90,
-      "_value": 73.0384465703102
+      "_value": 75
     },
     {
       "lower_bound": 10,
       "upper_bound": 30,
-      "_value": 29.321622010478663
+      "_value": 25
     }
   ],
   "hyperparameters": {
-    "mutation_rate": 0.1,
-    "crossover_operator": "uniform",
+    "mutation_rate": 0.2,
+    "crossover_operator": "average",
     "crossover_rate": 1,
-    "population_number": 6,
-    "processes_number": 6,
+    "population_number": 4,
+    "processes_number": 4,
     "mutation_type": "uniform",
     "max_iterations": 100
   }

@@ -21,7 +21,7 @@ class StochRsiMacdStrategy(Strategy):
     STOCH_SLOW_K = 1
     STOCH_SLOW_D = 3
     RSI_PERIOD = 14
-    MAX_OPEN_POSITIONS_NUMBER = 10
+    MAX_OPEN_POSITIONS_NUMBER = 4
 
     def __init__(self, wallet_handler: WalletHandler, *strategy_params):
         self.risk_reward_ratio = strategy_params[0]

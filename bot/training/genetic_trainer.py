@@ -1,4 +1,5 @@
 import copy
+import inspect
 import json
 import math
 import multiprocessing
@@ -56,31 +57,31 @@ class _Individual:
         # Deepcopy the genome
         self.genome = copy.deepcopy(genome) if deepcopy else genome
         # Load the parameters into the strategy and instantiate it
-        self.strategy = strategy_class(TestWallet.factory(), *[g.value for g in self.genome])
+        self.strategy_class = strategy_class
         self.fitness = 0
         self.test_result = None
 
+    def build_strategy(self) -> Strategy:
+        return self.strategy_class(TestWallet.factory(), *[g.value for g in self.genome])
+
     def __str__(self):
-        s = "Strategy: " + str(type(self.strategy))
+        s = "Strategy: " + str(self.strategy_class)
         s += "\nGenome: | "
         for g in self.genome: s += str(g) + " | "
         s += "\nFitness: " + str(self.fitness)
         s += "\n\nTest\n" + str(self.test_result)
         return s
 
-    def to_json(self):
-        return json.dumps(self.__dict__, default = self.__serializer_guard, indent = 4)
-
-    @staticmethod
-    def __serializer_guard(obj):
-        if isinstance(obj, Strategy): return str(type(obj).__name__)
-        return obj.__dict__
-
     def calculate_fitness(self, test_result: TestResult) -> float:
         self.test_result = test_result
-        fitness = math.exp(0.75 * ((test_result.final_balance / test_result.initial_balance) - 1))  # * pow(test_result.win_ratio, 2)
-        if fitness < 0: fitness = 0
-        self.fitness = fitness
+        positions_percentage = 0
+        for p in test_result.closed_positions:
+            val = p.result_percentage
+            if val < 0:
+                val *= 2
+            positions_percentage += val
+        self.fitness = math.exp((positions_percentage * test_result.final_balance) / (test_result.initial_balance * test_result.days))
+        if self.fitness < 0: self.fitness = 0
         return self.fitness
 
 
@@ -97,10 +98,11 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
 
     population = []
     champion_fitness = 0
+    champion = None
     epoch = 0
     print("Loading " + data_path + "...")
     data = genfromtxt(data_path, delimiter = config.DEFAULT_DELIMITER)
-    progress_bar = ProgressBar.create(len(data)).width(50).no_percentage().build()
+    progress_bar = ProgressBar.create(len(data)).width(30).no_percentage().build()
     workers_pool = multiprocessing.Pool(processes_number)
 
     print("Starting " + str(population_number) + " parallel simulations on " + str(data_path))
@@ -109,6 +111,8 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     for i in range(population_number):
         population.append(_Individual(strategy_class, ancestor_genome))
 
+    __mutation(population, mutation_type, mutation_rate)
+
     while epoch < max_iterations:
         epoch += 1
         avg_fitness = 0
@@ -116,8 +120,8 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
         progress_bar.reset()
         start = time.time()
         try:
-            test_results = workers_pool.starmap(dataset_evaluator.evaluate, zip([i.strategy for i in population], repeat(1000), repeat(data), repeat(progress_bar.step), repeat(1440), range(population_number)))
-            # test_results = test_results_async.get(timeout = 1000)
+            test_results_async = workers_pool.starmap_async(dataset_evaluator.evaluate, zip([i.build_strategy() for i in population], repeat(1000), repeat(data), repeat(progress_bar.step), repeat(1440), range(population_number)))
+            test_results = test_results_async.get(timeout = 1000)
             if test_results is None:
                 break
 
@@ -127,29 +131,37 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
             break
         end = time.time()
         progress_bar.dispose()
-        print("\n\nEpoch " + str(epoch) + " completed in " + str(end - start) + "s", flush = True)
+        print("Epoch " + str(epoch) + " completed in " + str(end - start) + "s", flush = True)
 
         # Compute fitness and results
-        for result, index in test_results:
+        for result, balance, index in test_results:
             avg_fitness += population.__getitem__(index).calculate_fitness(result)
 
         # Calculate champion
         epoch_champion = max(population, key = lambda x: x.fitness)
+
         if epoch_champion.fitness > champion_fitness:
             champion_fitness = epoch_champion.fitness
-            if report_path is not None:
-                with open(report_path, "w") as outfile:
-                    outfile.write(epoch_champion.to_json())
+            champion = copy.deepcopy(epoch_champion)
             with open(result_path, "w") as res_out_file:
-                res_out_file.write(TrainingResult([g.value for g in epoch_champion.genome], type(epoch_champion.strategy).__name__).to_json())
+                res_out_file.write(TrainingResult([g.value for g in epoch_champion.genome], epoch_champion.strategy_class.__name__).to_json())
             # print("Evaluating champion...")
             # res, i = dataset_evaluator.evaluate(epoch_champion.strategy, 1000, data, None, False, 0)
             # print(str(res))
+        if report_path is not None:
+            with open(report_path, "w") as outfile:
+                outfile.write("Epoch champion:\n")
+                outfile.write(str(epoch_champion))
+                if champion is not None:
+                    outfile.write("\n" + "-" * 50)
+                    outfile.write("\nChampion:\n")
+                    outfile.write(str(champion))
 
         avg_fitness /= population_number
         print("Average fitness: " + str(avg_fitness), flush = True)
         print("Max fitness: " + str(epoch_champion.fitness), flush = True)
         print("Champion fitness: " + str(champion_fitness), flush = True)
+        print("\n", flush = True)
         if epoch < max_iterations:
             # Crossover
             population = __crossover(population, crossover_rate, crossover_operator)
@@ -173,7 +185,7 @@ def __crossover(population: list[_Individual], crossover_rate: float, crossover_
     for i in range(len(population)):
         if random.random() < crossover_rate:
             new_genome = __crossover_operator(crossover_operator, parent1, parent2)
-            new_population.append(_Individual(type(parent1.strategy), new_genome, False))
+            new_population.append(_Individual(parent1.strategy_class, new_genome, False))
         else:
             if random.random() < 0.5:
                 new_population.append(parent1)

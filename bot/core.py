@@ -83,15 +83,9 @@ class Position:
         self.won = won
         self.closed = True
         if self.pos_type == PositionType.LONG:
-            if won:
-                self.result_percentage = ((close_price / self.open_price) - 1) * 100
-            else:
-                self.result_percentage = ((close_price / self.open_price) - 1) * 100
+            self.result_percentage = ((close_price / self.open_price) - 1) * 100
         if self.pos_type == PositionType.SHORT:
-            if won:
-                self.result_percentage = ((self.open_price / close_price) - 1) * 100
-            else:
-                self.result_percentage = ((self.open_price / close_price) - 1) * 100
+            self.result_percentage = ((self.open_price / close_price) - 1) * 100
         self.profit = self.investment * (self.result_percentage / 100)
 
 

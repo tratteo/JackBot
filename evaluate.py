@@ -1,10 +1,13 @@
 import importlib
 import sys
-import config
-from bot import lib
-from numpy import genfromtxt
+
 import matplotlib.pyplot as plot
+import talib
+from numpy import genfromtxt
+
+import config
 from bot import dataset_evaluator
+from bot import lib
 from bot.command.command_handler import CommandHandler
 from bot.lib import ProgressBar
 from strategies.StochRsiMacdStrategy import *
@@ -55,7 +58,6 @@ if plot_arg is not None:
 progress_bar = ProgressBar.create(len(data)).width(50).build()
 res, balance, index = dataset_evaluator.evaluate(strategy, 1000, data, progress_delegate = progress_bar.step, balance_update_interval = balance_plot_interval)
 progress_bar.dispose()
-
 print(res)
 out = command_manager.get_k('-o')
 if out is not None:
@@ -64,15 +66,20 @@ if out is not None:
         file.write(str(res))
 
 if plot_arg is not None:
+    # print([str(b) for b in balance])
+    balance_ema = talib.MA(np.array(balance), timeperiod = 25)
     balance_min, balance_max = min(balance), max(balance)
     balance_len = len(balance)
     plot.figure(num = strategy_name)
-    plot.plot(balance)
+    plot.plot(balance, label = "Balance")
+    plot.plot(balance_ema, label = "EMA")
     plot.title(strategy_name + " on " + dataset)
     plot.ylabel("Balance")
     plot.xlabel(plot_arg)
+    plot.legend()
     step = balance_len / 40 if balance_len > 80 else 1
     plot.xticks(np.arange(start = 0, stop = len(balance) + 1, step = int(step)))
-    plot.yticks(np.arange(start = balance_min, stop = balance_max, step = (balance_max - balance_min) / 10))
+    step = (balance_max - balance_min) / 5 if (balance_max - balance_min) / 4 > 25 else 25
+    plot.yticks(np.arange(start = balance_min, stop = balance_max, step = step))
     plot.grid()
     plot.show()

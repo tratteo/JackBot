@@ -1,3 +1,5 @@
+import copy
+import json
 from typing import Callable
 
 import numpy
@@ -38,6 +40,7 @@ frame_message = {
 
 class TestResult:
     def __init__(self):
+        self.closed_positions = []
         self.total_profit = 0
         self.days = 0
         self.win_ratio = 0
@@ -53,6 +56,7 @@ class TestResult:
         result.total_profit = 0
         result.days = float(minute_candles) / 1440
         result.final_balance = strategy.wallet_handler.get_balance()
+        result.closed_positions = copy.deepcopy(strategy.closed_positions)
         won = 0
         for c in strategy.closed_positions:
             result.total_profit += c.profit
@@ -62,6 +66,11 @@ class TestResult:
         result.estimated_apy = (((((((result.final_balance / initial_balance) - 1) * 100) / result.days) / 100) + 1) ** 365 - 1) * 100
         result.opened_positions = len(strategy.open_positions) + len(strategy.closed_positions)
         return result
+
+    def get_dict(self):
+        dic = self.__dict__
+        dic.pop("closed_positions", None)
+        return dic
 
     def __str__(self):
         return "{:<20s}{:^4s}".format("Time span: ", str(int(self.days)) + " days") + \
@@ -86,7 +95,7 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
     balance_trend = []
     if not isinstance(strategy.wallet_handler, TestWallet):
         print("Unable to test the strategy, the wallet handler is not an instance of a TestWallet")
-        return None, index
+        return None, balance_trend, index
 
     progress_reporter_span = 5000
 
