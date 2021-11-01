@@ -115,11 +115,11 @@ class StochRsiMacdStrategy(Strategy):
     def long_perpetual_condition(self, frame) -> bool:
         macd, signal, hist = self.get_indicator("macd")
         rsi = self.get_indicator("rsi")
-        return rsi[-1] > 50 and macd[-1] >= signal[-1]
+        return rsi[-1] > 50  # and macd[-1] >= signal[-1]
 
     def short_perpetual_condition(self, frame) -> bool:
         macd, signal, hist = self.get_indicator("macd")
         rsi = self.get_indicator("rsi")
-        return rsi[-1] < 50 and macd[-1] <= signal[-1]
+        return rsi[-1] < 50  # and macd[-1] <= signal[-1]
 
     # endregion
