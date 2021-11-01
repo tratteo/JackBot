@@ -237,11 +237,10 @@ def __mutation_operator(key: str, individual: _Individual, mutation_rate: float)
         for g in individual.genome:
             if random.random() < mutation_rate:
                 g.value = random.uniform(g.lower_bound, g.upper_bound)
-    elif key == "average":
+    elif key == "gaussian":
         for g in individual.genome:
             if random.random() < mutation_rate:
                 val = g.upper_bound - g.lower_bound
-                if val > 1000: val = 1000 / 4
-                g.value += random.gauss(0, val / 4)
+                g.value += random.gauss(0, val / 3)
 
 # endregion
