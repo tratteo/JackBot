@@ -32,7 +32,7 @@ command_manager = CommandHandler.create() \
     .positional('Genetic parameters') \
     .positional('Dataset file') \
     .keyed('-o', 'Output file .res') \
-    .keyed('-r', 'Epoch champion report') \
+    .keyed('-r', 'Epoch report') \
     .on_help(helper) \
     .on_fail(failure) \
     .build(sys.argv)
