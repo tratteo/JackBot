@@ -47,7 +47,7 @@ with open(command_manager.get_p(0)) as file:
 dataset = command_manager.get_p(1)
 strategy_name = data["strategy"]
 strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)
-strategy = strategy_class(TestWallet.factory(), *data["parameters"])
+strategy = strategy_class(TestWallet.factory(10000), *data["parameters"])
 print("Loading " + dataset + "...")
 data = genfromtxt(dataset, delimiter = config.DEFAULT_DELIMITER)
 print("Evaluating...")
@@ -56,7 +56,7 @@ plot_arg = command_manager.get_k("-p")
 if plot_arg is not None:
     balance_plot_interval = lib.get_minutes_from_flag(plot_arg)
 progress_bar = ProgressBar.create(len(data)).width(50).build()
-res, balance, index = dataset_evaluator.evaluate(strategy, 1000, data, progress_delegate = progress_bar.step, balance_update_interval = balance_plot_interval)
+res, balance, index = dataset_evaluator.evaluate(strategy, 10000, data, progress_delegate = progress_bar.step, balance_update_interval = balance_plot_interval)
 progress_bar.dispose()
 print(res)
 out = command_manager.get_k('-o')

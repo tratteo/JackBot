@@ -13,22 +13,23 @@ class AtrSrsi3EmaStrategy(Strategy):
         risk_reward_ratio\n
         atr_factor\n
         investment_rate\n
+        interval_tolerance
 
     '''
     MAX_OPEN_POSITIONS_NUMBER = 5
-    INTERVALS_TOLERANCE = 2
 
     def __init__(self, wallet_handler: WalletHandler, *strategy_params):
         self.risk_reward_ratio = strategy_params[0]
         self.atr_factor = strategy_params[1]
         self.investment_rate = strategy_params[2]
+        self.interval_tolerance = strategy_params[3]
         super().__init__(wallet_handler, self.MAX_OPEN_POSITIONS_NUMBER)
 
     def compute_indicators(self) -> list[tuple[str, any]]:
-        return [('8ema', technical.EMA(np.array(self.closes), timeperiod=8)),
-                ('14ema', technical.EMA(np.array(self.closes), timeperiod=14)),
-                ('50ema', technical.EMA(np.array(self.closes), timeperiod=50)),
-                ('stoch_rsi', technical.STOCHRSI(np.array(self.closes), timeperiod=14, fastk_period=3, fastd_period=3)),
+        return [('8ema', technical.EMA(np.array(self.closes), timeperiod = 8)),
+                ('14ema', technical.EMA(np.array(self.closes), timeperiod = 14)),
+                ('50ema', technical.EMA(np.array(self.closes), timeperiod = 50)),
+                ('stoch_rsi', technical.STOCHRSI(np.array(self.closes), timeperiod = 14, fastk_period = 3, fastd_period = 3)),
                 ("atr", technical.ATR(np.array(self.highs), np.array(self.lows), np.array(self.closes)))
                 ]
 
@@ -51,12 +52,12 @@ class AtrSrsi3EmaStrategy(Strategy):
 
     def get_long_conditions(self) -> List[StrategyCondition]:
         return [PerpetualStrategyCondition(self.long_perpetual_condition),
-                EventStrategyCondition(self.long_event_condition, self.INTERVALS_TOLERANCE)
+                EventStrategyCondition(self.long_event_condition, self.interval_tolerance)
                 ]
 
     def get_short_conditions(self) -> List[StrategyCondition]:
         return [PerpetualStrategyCondition(self.short_perpetual_condition),
-                EventStrategyCondition(self.short_event_condition, self.INTERVALS_TOLERANCE)]
+                EventStrategyCondition(self.short_event_condition, self.interval_tolerance)]
 
     def long_perpetual_condition(self, frame) -> bool:
         ema8, ema14, ema50 = self.get_indicator("8ema"), self.get_indicator('14ema'), self.get_indicator('50ema')

@@ -4,26 +4,31 @@
     {
       "lower_bound": 0.5,
       "upper_bound": 5,
-      "_value": 0.8
+      "_value": 1.5
     },
     {
       "lower_bound": 1,
       "upper_bound": 5,
-      "_value": 2.8
+      "_value": 2.5
+    },
+    {
+      "lower_bound": 0.01,
+      "upper_bound": 0.15,
+      "_value": 0.075
     },
     {
       "lower_bound": 1,
       "upper_bound": 10,
-      "_value": 1.9
+      "_value": 4
     }
   ],
   "hyperparameters": {
-    "mutation_rate": 1,
+    "mutation_rate": 0.25,
     "crossover_operator": "uniform",
-    "crossover_rate": 1,
-    "population_number": 8,
-    "processes_number": 8,
+    "crossover_rate": 0.85,
+    "population_number": 12,
+    "processes_number": 12,
     "mutation_type": "gaussian",
-    "max_iterations": 10
+    "max_iterations": 100
   }
 }
