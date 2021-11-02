@@ -73,7 +73,7 @@ class _Individual:
             val = p.result_percentage
             positions_percentage += val
         balance_ratio = test_result.final_balance / test_result.initial_balance
-        #self.fitness = math.exp((math.pow(abs(balance_ratio), 1.25) * positions_percentage * math.pow(test_result.win_ratio + 1, 2.75)) / (288 * test_result.days))
+        # self.fitness = math.exp((math.pow(abs(balance_ratio), 1.25) * positions_percentage * math.pow(test_result.win_ratio + 1, 2.75)) / (288 * test_result.days))
         self.fitness = math.exp(positions_percentage * math.pow(test_result.win_ratio + 1, 1.5) / test_result.days)
         if self.fitness < 0: self.fitness = 0
         return self.fitness
@@ -91,7 +91,6 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     report_path = kwargs.get("report_path")
 
     population = []
-    champion_fitness = 0
     champion = None
     epoch = 0
     print("Loading " + data_path + "...")
@@ -129,13 +128,12 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
 
         # Compute fitness and results
         for result, balance, index in test_results:
-            avg_fitness += population.__getitem__(index).calculate_fitness(result)
+            avg_fitness += population[index].calculate_fitness(result)
 
         # Calculate champion
         epoch_champion = max(population, key = lambda x: x.fitness)
 
-        if epoch_champion.fitness > champion_fitness:
-            champion_fitness = epoch_champion.fitness
+        if epoch_champion.fitness > champion.fitness:
             champion = copy.deepcopy(epoch_champion)
             with open(result_path, "w") as res_out_file:
                 res_out_file.write(TrainingResult([g.value for g in epoch_champion.genome], epoch_champion.strategy_class.__name__).to_json())
@@ -154,7 +152,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
         avg_fitness /= population_number
         print("Average fitness: " + str(avg_fitness), flush = True)
         print("Max fitness: " + str(epoch_champion.fitness), flush = True)
-        print("Champion fitness: " + str(champion_fitness), flush = True)
+        print("Champion fitness: " + str(champion.fitness), flush = True)
         print("\n", flush = True)
         if epoch < max_iterations:
             # Crossover
