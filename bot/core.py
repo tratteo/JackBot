@@ -94,8 +94,8 @@ class Position:
 
                 self.order_info = wallet_handler.client.create_order(
                     symbol = pair,
-                    side = 'BUY',
-                    type = 'MARKET',
+                    side = "BUY",
+                    type = "MARKET",
                     quantity = self.investment
                 )
 
@@ -218,14 +218,18 @@ class WalletHandler(ABC):
 
 class BinanceWallet(WalletHandler):
 
-    def __init__(self, options, api_key, api_secret):
+    @classmethod
+    def factory(cls, options, api_key, api_secret):
+        return BinanceWallet(options, api_key, api_secret)
+
+    def __init__(self, options, api_key: str, api_secret: str):
         self.options = options
         self.client = Client(api_key, api_secret)
-        self.client.API_URL = 'https://testnet.binance.vision/api'
+        self.client.API_URL = "https://testnet.binance.vision/api"
 
     def get_balance(self):
-        print(self.client.get_asset_balance(asset = 'ETH')["free"])
-        return float(self.client.get_asset_balance(asset = 'ETH')["free"])
+        print(self.client.get_asset_balance(asset = self.options["first"])["free"])
+        return float(self.client.get_asset_balance(asset = self.options["first"])["free"])
 
 
 class TestWallet(WalletHandler):

@@ -5,20 +5,11 @@ import matplotlib.pyplot as plot
 import talib
 from numpy import genfromtxt
 
-import config
 from bot import dataset_evaluator
 from bot import lib
 from bot.command.command_handler import CommandHandler
 from bot.lib import ProgressBar
 from strategies.StochRsiMacdStrategy import *
-
-
-def __try_get_json_attr(key: str, json_obj):
-    try:
-        val = json_obj[key]
-        return val
-    except KeyError:
-        return None
 
 
 def helper(helper_str: str):
@@ -27,46 +18,60 @@ def helper(helper_str: str):
 
 
 def failure(helper_str: str):
-    print('Wrong syntax \n')
+    print("Wrong syntax \n")
     print(helper_str, flush = True)
     exit(1)
 
 
 command_manager = CommandHandler.create() \
-    .positional('Strategy file') \
-    .positional('Dataset file') \
-    .keyed('-o', 'Output file .res') \
+    .positional("Strategy file") \
+    .positional("Dataset file") \
+    .keyed("-o", "Output file .res") \
     .keyed("-p", "Plot balance with a certain precision") \
+    .keyed("-ib", "The initial balance") \
     .on_help(helper) \
     .on_fail(failure) \
     .build(sys.argv)
 
 with open(command_manager.get_p(0)) as file:
-    data = json.load(file)
+    options_file = json.load(file)
+
+# Get args
+initial_balance = int(command_manager.get_k("-ib"))
+if initial_balance is None: initial_balance = 10000
+
+plot_arg = lib.get_minutes_from_flag(command_manager.get_k("-p"))
+balance_plot_interval = plot_arg
+if balance_plot_interval is None: balance_plot_interval = 1440
 
 dataset = command_manager.get_p(1)
-strategy_name = data["strategy"]
+timeframe = lib.get_minutes_from_flag(options_file["timeframe"])
+out = command_manager.get_k("-o")
+
+# Instantiate the strategy
+strategy_name = options_file["strategy"]
 strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)
-strategy = strategy_class(TestWallet.factory(10000), *data["parameters"])
+strategy = strategy_class(TestWallet.factory(initial_balance), *options_file["parameters"])
+
+# Load data
 print("Loading " + dataset + "...")
 data = genfromtxt(dataset, delimiter = config.DEFAULT_DELIMITER)
-print("Evaluating...")
-balance_plot_interval = 1440
-plot_arg = command_manager.get_k("-p")
-if plot_arg is not None:
-    balance_plot_interval = lib.get_minutes_from_flag(plot_arg)
+
+# Evaluate
+print("Evaluating " + strategy_name + " on " + dataset + " | " + str(options_file["timeframe"]))
 progress_bar = ProgressBar.create(len(data)).width(50).build()
-res, balance, index = dataset_evaluator.evaluate(strategy, 10000, data, progress_delegate = progress_bar.step, balance_update_interval = balance_plot_interval)
+res, balance, index = dataset_evaluator.evaluate(strategy, initial_balance, data, progress_delegate = progress_bar.step, balance_update_interval = balance_plot_interval, timeframe = timeframe)
 progress_bar.dispose()
-print(res)
-out = command_manager.get_k('-o')
+print(str(res))
+
+# Print to file
 if out is not None:
     lib.create_folders_in_path(out, lambda: sys.exit(1))
-    with open(out, 'w') as file:
+    with open(out, "w") as file:
         file.write(str(res))
 
+# Plot data
 if plot_arg is not None:
-    # print([str(b) for b in balance])
     balance_ema = talib.MA(np.array(balance), timeperiod = 25)
     balance_min, balance_max = min(balance), max(balance)
     balance_len = len(balance)

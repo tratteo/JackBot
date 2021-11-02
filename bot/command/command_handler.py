@@ -2,11 +2,11 @@ from typing import Callable
 
 
 class CommandHandler:
-    '''
+    """
     
 
 
-    '''
+    """
 
     @classmethod
     def create(cls):
@@ -22,7 +22,7 @@ class CommandHandler:
         self.p_number = 0
         self.keys = []
         self.fail_delegate = None
-        self.helper_string = ''
+        self.helper_string = ""
         self.help_delegate = None
         self.flags = []
 
@@ -48,7 +48,7 @@ class CommandHandlerBuilder:
 
     def positional(self, helper: str):
         self.command_handler.p_number += 1
-        self.command_handler.helper_string += 'P' + str(self.command_handler.p_number) + ': ' + helper + '\n'
+        self.command_handler.helper_string += "P" + str(self.command_handler.p_number) + ": " + helper + "\n"
         return self
 
     def flag(self, key):
@@ -58,7 +58,7 @@ class CommandHandlerBuilder:
     def keyed(self, key, helper: str):
         if key not in self.command_handler.keys:
             self.command_handler.keys.append(key)
-            self.command_handler.helper_string += key + ': ' + helper + '\n'
+            self.command_handler.helper_string += key + ": " + helper + "\n"
         return self
 
     def on_fail(self, fail_delegate: Callable[[str], None]):
@@ -72,7 +72,7 @@ class CommandHandlerBuilder:
     def build(self, args: list[str]) -> CommandHandler:
         args = args.copy()
         args.pop(0)
-        if len(args) <= 0 or args[0] == 'help' and self.command_handler.help_delegate is not None:
+        if len(args) <= 0 or args[0] == "help" and self.command_handler.help_delegate is not None:
             self.command_handler.help_delegate(self.command_handler.helper_string)
             return self.command_handler
         for k in self.command_handler.keys:

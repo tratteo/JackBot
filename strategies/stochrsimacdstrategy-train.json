@@ -1,5 +1,6 @@
 {
   "strategy": "StochRsiMacdStrategy",
+  "timeframe": "3m",
   "parameters": [
     {
       "lower_bound": 1,

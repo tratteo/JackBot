@@ -1,5 +1,6 @@
 {
   "strategy": "AtrSrsi3EmaStrategy",
+  "timeframe": "5m",
   "parameters": [
     {
       "lower_bound": 0.5,
@@ -18,16 +19,16 @@
     },
     {
       "lower_bound": 1,
-      "upper_bound": 10,
-      "_value": 4
+      "upper_bound": 5,
+      "_value": 2
     }
   ],
   "hyperparameters": {
     "mutation_rate": 0.25,
     "crossover_operator": "uniform",
     "crossover_rate": 0.85,
-    "population_number": 12,
-    "processes_number": 12,
+    "population_number": 6,
+    "processes_number": 6,
     "mutation_type": "gaussian",
     "max_iterations": 100
   }
