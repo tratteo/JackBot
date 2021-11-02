@@ -37,8 +37,9 @@ with open(command_manager.get_p(0)) as file:
     options_file = json.load(file)
 
 # Get args
-initial_balance = int(command_manager.get_k("-ib"))
-if initial_balance is None: initial_balance = 10000
+initial_balance = 10000
+arg = command_manager.get_k("-ib")
+if arg is not None: initial_balance = int(arg)
 
 plot_arg = lib.get_minutes_from_flag(command_manager.get_k("-p"))
 balance_plot_interval = plot_arg
@@ -47,7 +48,6 @@ if balance_plot_interval is None: balance_plot_interval = 1440
 dataset = command_manager.get_p(1)
 timeframe = lib.get_minutes_from_flag(options_file["timeframe"])
 out = command_manager.get_k("-o")
-
 # Instantiate the strategy
 strategy_name = options_file["strategy"]
 strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)

@@ -1,35 +1,35 @@
 {
   "strategy": "AtrSrsi3EmaStrategy",
-  "timeframe": "5m",
+  "timeframe": "3m",
   "parameters": [
     {
       "lower_bound": 0.5,
       "upper_bound": 5,
-      "_value": 1.5
+      "_value": 0.5
     },
     {
       "lower_bound": 1,
-      "upper_bound": 5,
-      "_value": 2.5
+      "upper_bound": 8,
+      "_value": 2.257
     },
     {
       "lower_bound": 0.01,
       "upper_bound": 0.15,
-      "_value": 0.075
+      "_value": 0.125
     },
     {
       "lower_bound": 1,
-      "upper_bound": 5,
-      "_value": 2
+      "upper_bound": 8,
+      "_value": 4
     }
   ],
   "hyperparameters": {
-    "mutation_rate": 0.25,
+    "mutation_rate": 0.3,
     "crossover_operator": "uniform",
     "crossover_rate": 0.85,
-    "population_number": 6,
-    "processes_number": 6,
+    "population_number": 12,
+    "processes_number": 12,
     "mutation_type": "gaussian",
-    "max_iterations": 100
+    "max_iterations": 30
   }
 }

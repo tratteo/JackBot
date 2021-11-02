@@ -73,10 +73,10 @@ class _Individual:
         for p in test_result.closed_positions:
             val = p.result_percentage
             # losses are 15% more serious
-            if val < 0: val *= 1.15
+            # if val < 0: val *= 1.15
             positions_percentage += val
         balance_ratio = test_result.final_balance / test_result.initial_balance
-        self.fitness = math.exp(balance_ratio * positions_percentage * math.pow(test_result.win_ratio + 1, 1.65) / (test_result.minutes / test_result.time_frame_minutes))
+        self.fitness = math.exp(balance_ratio * positions_percentage * math.pow(test_result.win_ratio + 1, 1.75) / (test_result.minutes / test_result.time_frame_minutes))
         if self.fitness < 0: self.fitness = 0
         return self.fitness
 

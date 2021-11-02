@@ -105,7 +105,7 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
 
     # Report progress each week
     progress_reporter_span = 1440 * 7
-
+    print(timeframe)
     try:
         while epoch < time_span:
             if epoch + 1 >= len(data): break
