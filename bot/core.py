@@ -100,22 +100,51 @@ class Position:
                 )
 
         except BinanceAPIException as e:
-            # error handling goes here
             print(e)
         except BinanceOrderException as e:
-            # error handling goes here
             print(e)
 
-    def close(self, won: bool, close_price: float):
+        print("Order opened: ")
+        print('symbol: ' + self.order_info['symbol'] + '\nexecutedQty ' + self.order_info['executedQty'])
+
+
+
+    def close(self, won: bool, close_price: float, wallet_handler):
+
         self.won = won
         self.closed = True
 
-        if self.pos_type == PositionType.LONG:
-            self.result_percentage = ((close_price / self.open_price) - 1) * 100
-        if self.pos_type == PositionType.SHORT:
-            self.result_percentage = ((self.open_price / close_price) - 1) * 100
+
+
+        try:
+            if isinstance(wallet_handler, BinanceWallet):
+                options = wallet_handler.options
+
+                pair = options["first"] + options["second"]
+                if self.pos_type == PositionType.LONG:
+                    # pair = pair + "DOWN" + options["second"]
+                    self.result_percentage = ((close_price / self.open_price) - 1) * 100
+                if self.pos_type == PositionType.SHORT:
+                    # pair = pair + "UP" + options["second"]
+                    self.result_percentage = ((self.open_price / close_price) - 1) * 100
+
+                pair = options["first"] + options["second"]
+                self.order_info = wallet_handler.client.create_order(
+                    symbol=pair,
+                    side='SELL',
+                    type='MARKET',
+                    quantity=self.investment
+                )
+
+        except BinanceAPIException as e:
+            print(e)
+        except BinanceOrderException as e:
+            print(e)
 
         self.profit = self.investment * (self.result_percentage / 100)
+
+        print("Order closed: ")
+        print('symbol: ' + self.order_info['symbol'] + '\nexecutedQty ' + self.order_info['executedQty'])
 
     def get_order_info(self):
         print(self.order_info)
@@ -212,7 +241,10 @@ class BoundedStrategyCondition(StrategyCondition):
 class WalletHandler(ABC):
 
     @abstractmethod
-    def get_balance(self):
+    def get_asset_balance(self):
+        pass
+
+    def get_second_balance(self):
         pass
 
 
@@ -223,9 +255,12 @@ class BinanceWallet(WalletHandler):
         self.client = Client(api_key, api_secret)
         self.client.API_URL = 'https://testnet.binance.vision/api'
 
-    def get_balance(self):
-        print(self.client.get_asset_balance(asset = 'ETH')["free"])
-        return float(self.client.get_asset_balance(asset = 'ETH')["free"])
+    def get_asset_balance(self):
+        return float(self.client.get_asset_balance(asset=self.options["first"])["free"])
+
+    def get_second_balance(self):
+        return float(self.client.get_asset_balance(asset=self.options["second"])["free"])
+
 
 
 class TestWallet(WalletHandler):
@@ -315,7 +350,7 @@ class Strategy(ABC):
         for pos in self.open_positions:
             should_close, won = pos.should_close(close_price)
             if should_close:
-                pos.close(won, close_price)
+                pos.close(won, close_price, self.wallet_handler)
                 if isinstance(self.wallet_handler, TestWallet):
                     self.wallet_handler.balance += pos.profit + pos.investment
                 to_remove.append(pos)
@@ -343,7 +378,7 @@ class Strategy(ABC):
             for c in self.__short_conditions:
                 c.tick(frame)
 
-            if len(self.open_positions) < self.max_positions and self.wallet_handler.get_balance() > 0:
+            if len(self.open_positions) < self.max_positions and self.wallet_handler.get_asset_balance() > 0:
                 if self.__check_conditions(self.__long_conditions):
                     investment = self.get_margin_investment()
                     pos = Position(PositionType.LONG, candle["t"], close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG), investment)
