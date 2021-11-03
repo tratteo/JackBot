@@ -80,7 +80,6 @@ class Position:
         return False, False
 
     def open(self, wallet_handler):
-
         try:
             if isinstance(wallet_handler, BinanceWallet):
                 options = wallet_handler.options
@@ -94,10 +93,10 @@ class Position:
                 #    pair = pair + "UP" +  options["second"]
 
                 self.order_info = wallet_handler.client.create_order(
-                    symbol= pair,
-                    side='BUY',
-                    type='MARKET',
-                    quantity=self.investment
+                    symbol = pair,
+                    side = 'BUY',
+                    type = 'MARKET',
+                    quantity = self.investment
                 )
 
         except BinanceAPIException as e:
@@ -149,6 +148,7 @@ class Position:
 
     def get_order_info(self):
         print(self.order_info)
+
 
 # endregion
 
@@ -260,7 +260,6 @@ class BinanceWallet(WalletHandler):
 
     def get_second_balance(self):
         return float(self.client.get_asset_balance(asset=self.options["second"])["free"])
-
 
 
 

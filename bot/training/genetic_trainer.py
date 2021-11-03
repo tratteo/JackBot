@@ -35,16 +35,11 @@ class Gene:
         return self._value
 
     @value.setter
-    def value(self, value: float):
-        if self.lower_bound < value:
-            self._value = value
+    def value(self, val: float):
+        if self.lower_bound < val < self.upper_bound:
+            self._value = val
         else:
-            self._value = self.lower_bound
-
-        if self.upper_bound > value:
-            self._value = value
-        else:
-            self._value = self.upper_bound
+            self._value = self.lower_bound if val < self.lower_bound else self.upper_bound
 
     def __str__(self):
         return "[" + str(self.lower_bound) + ", " + str(self.upper_bound) + "]: " + "{:.3f}".format(self.value)
@@ -76,10 +71,10 @@ class _Individual:
         positions_percentage = 0
         for p in test_result.closed_positions:
             val = p.result_percentage
-            # if val < 0:
-            #     val *= 1
             positions_percentage += val
-        self.fitness = math.exp((math.pow(test_result.final_balance / test_result.initial_balance, 1.5) * positions_percentage * math.pow(test_result.win_ratio + 1, 1.5)) / (288 * test_result.days))
+        balance_ratio = test_result.final_balance / test_result.initial_balance
+        # self.fitness = math.exp((math.pow(abs(balance_ratio), 1.25) * positions_percentage * math.pow(test_result.win_ratio + 1, 2.75)) / (288 * test_result.days))
+        self.fitness = math.exp(positions_percentage * math.pow(test_result.win_ratio + 1, 1.5) / test_result.days)
         if self.fitness < 0: self.fitness = 0
         return self.fitness
 
@@ -96,7 +91,6 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     report_path = kwargs.get("report_path")
 
     population = []
-    champion_fitness = 0
     champion = None
     epoch = 0
     print("Loading " + data_path + "...")
@@ -134,13 +128,12 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
 
         # Compute fitness and results
         for result, balance, index in test_results:
-            avg_fitness += population.__getitem__(index).calculate_fitness(result)
+            avg_fitness += population[index].calculate_fitness(result)
 
         # Calculate champion
         epoch_champion = max(population, key = lambda x: x.fitness)
 
-        if epoch_champion.fitness > champion_fitness:
-            champion_fitness = epoch_champion.fitness
+        if epoch_champion.fitness > champion.fitness:
             champion = copy.deepcopy(epoch_champion)
             with open(result_path, "w") as res_out_file:
                 res_out_file.write(TrainingResult([g.value for g in epoch_champion.genome], epoch_champion.strategy_class.__name__).to_json())
@@ -159,7 +152,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
         avg_fitness /= population_number
         print("Average fitness: " + str(avg_fitness), flush = True)
         print("Max fitness: " + str(epoch_champion.fitness), flush = True)
-        print("Champion fitness: " + str(champion_fitness), flush = True)
+        print("Champion fitness: " + str(champion.fitness), flush = True)
         print("\n", flush = True)
         if epoch < max_iterations:
             # Crossover
@@ -232,11 +225,10 @@ def __mutation_operator(key: str, individual: _Individual, mutation_rate: float)
         for g in individual.genome:
             if random.random() < mutation_rate:
                 g.value = random.uniform(g.lower_bound, g.upper_bound)
-    elif key == "average":
+    elif key == "gaussian":
         for g in individual.genome:
             if random.random() < mutation_rate:
                 val = g.upper_bound - g.lower_bound
-                if val > 1000: val = 1000 / 4
-                g.value += random.gauss(0, val / 4)
+                g.value += random.gauss(0, val / 3)
 
 # endregion

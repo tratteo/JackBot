@@ -47,8 +47,8 @@ class TestResult:
         self.win_ratio = 0
         self.estimated_apy = 0
         self.initial_balance = 0
-        self.final_balance = 0
         self.opened_positions = 0
+        self.final_balance = 0
 
     @classmethod
     def construct(cls, strategy: Strategy, initial_balance: float, minute_candles: int):
@@ -56,15 +56,16 @@ class TestResult:
         result.initial_balance = initial_balance
         result.total_profit = 0
         result.days = float(minute_candles) / 1440
-        result.final_balance = strategy.wallet_handler.get_balance()
         result.closed_positions = copy.deepcopy(strategy.closed_positions)
         won = 0
         for c in strategy.closed_positions:
             result.total_profit += c.profit
             if c.won: won += 1
         result.win_ratio = 0
+        result.final_balance = result.initial_balance + result.total_profit
         if len(strategy.closed_positions) > 0: result.win_ratio = won / len(strategy.closed_positions)
-        result.estimated_apy = (((((((result.final_balance / initial_balance) - 1) * 100) / result.days) / 100) + 1) ** 365 - 1) * 100
+        #result.estimated_apy = (((((((result.final_balance / initial_balance) - 1) * 100) / result.days) / 100) + 1) ** 365 - 1) * 100
+        result.estimated_apy = (365/result.days )*((result.final_balance / result.initial_balance)-1)*100
         result.opened_positions = len(strategy.open_positions) + len(strategy.closed_positions)
         return result
 
@@ -141,8 +142,8 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
 
     if progress_delegate is not None: progress_delegate(time_span - epoch)
 
-    for p in strategy.open_positions:
-        strategy.wallet_handler.balance += p.investment
+    #for p in strategy.open_positions:
+    #   strategy.wallet_handler.balance += p.investment
 
     balance_trend.append(strategy.wallet_handler.get_balance())
     res = TestResult.construct(strategy, initial_balance, len(data))

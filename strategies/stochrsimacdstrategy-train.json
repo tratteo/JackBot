@@ -2,42 +2,42 @@
   "strategy": "StochRsiMacdStrategy",
   "parameters": [
     {
-      "lower_bound": 0.5,
+      "lower_bound": 1,
       "upper_bound": 5,
-      "_value": 2
+      "_value": 3.917
     },
     {
       "lower_bound": 0.5,
-      "upper_bound": 5,
-      "_value": 3
+      "upper_bound": 8,
+      "_value": 7.997
     },
     {
       "lower_bound": 1,
-      "upper_bound": 10,
-      "_value": 6
+      "upper_bound": 12,
+      "_value": 8.35
     },
     {
       "lower_bound": 0.01,
       "upper_bound": 0.1,
-      "_value": 0.025
+      "_value": 0.09
     },
     {
-      "lower_bound": 70,
-      "upper_bound": 90,
-      "_value": 80
+      "lower_bound": 65,
+      "upper_bound": 95,
+      "_value": 84.572
     },
     {
-      "lower_bound": 10,
-      "upper_bound": 30,
-      "_value": 30
+      "lower_bound": 5,
+      "upper_bound": 35,
+      "_value": 23.974
     }
   ],
   "hyperparameters": {
-    "mutation_rate": 0.175,
+    "mutation_rate": 0.25,
     "crossover_operator": "uniform",
-    "crossover_rate": 1,
-    "population_number": 6,
-    "processes_number": 6,
+    "crossover_rate": 0.8,
+    "population_number": 12,
+    "processes_number": 12,
     "mutation_type": "uniform",
     "max_iterations": 200
   }

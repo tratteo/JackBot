@@ -33,7 +33,6 @@ MANIFEST
 *.manifest
 *.spec
 *.rep
-*.res
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -52,7 +51,6 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 .reports/
-.results/
 
 # Translations
 *.mo
