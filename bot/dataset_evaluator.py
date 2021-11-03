@@ -1,9 +1,8 @@
 import copy
-import json
-from typing import Callable
 
 import numpy
 
+from bot import lib
 from bot.core import Strategy, TestWallet
 
 OPEN_T: int = 0
@@ -12,15 +11,14 @@ LOW: int = 3
 CLOSE: int = 4
 CLOSE_T: int = 6
 
-
 frame_message = {
     "e": "kline",
     "E": 123456789,
-    "s": "BNBBTC",
+    "s": "REDACTED",
     "k": {
         "t": 123400000,
         "T": 123460000,
-        "s": "BNBBTC",
+        "s": "REDACTED",
         "i": "1m",
         "f": 100,
         "L": 200,
@@ -30,7 +28,7 @@ frame_message = {
         "l": "low",
         "v": "1000",
         "n": 100,
-        "x": 'isClosed',
+        "x": "isClosed",
         "q": "1.0000",
         "V": "500",
         "Q": "0.500",
@@ -46,26 +44,30 @@ class TestResult:
         self.days = 0
         self.win_ratio = 0
         self.estimated_apy = 0
+        self.minutes = 0
         self.initial_balance = 0
         self.opened_positions = 0
         self.final_balance = 0
+        self.time_frame_minutes = 0
 
     @classmethod
-    def construct(cls, strategy: Strategy, initial_balance: float, minute_candles: int):
+    def construct(cls, strategy: Strategy, initial_balance: float, minute_candles: int, time_frame_minutes: int):
         result = TestResult()
         result.initial_balance = initial_balance
         result.total_profit = 0
+        result.minutes = minute_candles
         result.days = float(minute_candles) / 1440
+        result.time_frame_minutes = time_frame_minutes
         result.closed_positions = copy.deepcopy(strategy.closed_positions)
         won = 0
-        for c in strategy.closed_positions:
+        for c in result.closed_positions:
             result.total_profit += c.profit
             if c.won: won += 1
         result.win_ratio = 0
         result.final_balance = result.initial_balance + result.total_profit
         if len(strategy.closed_positions) > 0: result.win_ratio = won / len(strategy.closed_positions)
-        #result.estimated_apy = (((((((result.final_balance / initial_balance) - 1) * 100) / result.days) / 100) + 1) ** 365 - 1) * 100
-        result.estimated_apy = (365/result.days )*((result.final_balance / result.initial_balance)-1)*100
+        # result.estimated_apy = (((((((result.final_balance / initial_balance) - 1) * 100) / result.days) / 100) + 1) ** 365 - 1) * 100
+        result.estimated_apy = (365 / result.days) * ((result.final_balance / result.initial_balance) - 1) * 100
         result.opened_positions = len(strategy.open_positions) + len(strategy.closed_positions)
         return result
 
@@ -75,17 +77,17 @@ class TestResult:
         return dic
 
     def __str__(self):
-        return "{:<20s}{:^4s}".format("Time span: ", str(int(self.days)) + " days") + \
-               "\n{:<20s}{:^4.3f}".format("Initial balance: ", self.initial_balance) + \
-               "\n{:<20s}{:^4.3f}".format("Final balance: ", self.final_balance) + \
-               "\n{:<20s}{:^4.3f}".format("Total profit: ", self.total_profit) + \
-               "\n{:<20s}{:^4.3s}".format("Opened positions: ", str(self.opened_positions)) + \
-               "\n{:<20s}{:^4.3f}".format("Win rate: ", self.win_ratio * 100) + "%" + \
-               "\n{:<20s}{:^4.3f}".format("Estimated apy: ", self.estimated_apy) + "%"
+        return "{:<25s}{:^4.2f}".format("Time span (d): ", self.days) + \
+               "\n{:<25s}{:^4s}".format("Time frame: ", lib.get_flag_from_minutes(self.time_frame_minutes)) + \
+               "\n{:<25s}{:^4.3f}".format("Initial balance: ", self.initial_balance) + \
+               "\n{:<25s}{:^4.3f}".format("Final balance: ", self.final_balance) + \
+               "\n{:<25s}{:^4.3f}".format("Total profit: ", self.total_profit) + \
+               "\n{:<25s}{:^4}".format("Opened positions: ", self.opened_positions) + \
+               "\n{:<25s}{:^4.3f}".format("Win rate: ", self.win_ratio * 100) + "%" + \
+               "\n{:<25s}{:^4.3f}".format("Estimated apy: ", self.estimated_apy) + "%"
 
 
-def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_delegate, balance_update_interval: int = 1440, index: int = 0) -> [TestResult, list[float], int]:
-    candle_time = 3
+def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_delegate, balance_update_interval: int = 1440, timeframe: int = 3, index: int = 0) -> [TestResult, list[float], int]:
     epoch = 0
     high = data[epoch, HIGH]
     low = data[epoch, LOW]
@@ -99,8 +101,8 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
         print("Unable to test the strategy, the wallet handler is not an instance of a TestWallet")
         return None, balance_trend, index
 
-    progress_reporter_span = 5000
-
+    # Report progress each week
+    progress_reporter_span = 1440 * 7
     try:
         while epoch < time_span:
             if epoch + 1 >= len(data): break
@@ -116,7 +118,7 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
             if low > data[epoch, LOW]:
                 low = data[epoch, LOW]
 
-            if epoch != 0 and (epoch % candle_time) == candle_time - 1:
+            if epoch != 0 and (epoch % timeframe) == timeframe - 1:
                 frame_message["k"]["x"] = True
                 frame_message["k"]["h"] = str(high)
                 frame_message["k"]["l"] = str(low)
@@ -142,9 +144,9 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
 
     if progress_delegate is not None: progress_delegate(time_span - epoch)
 
-    #for p in strategy.open_positions:
+    # for p in strategy.open_positions:
     #   strategy.wallet_handler.balance += p.investment
 
     balance_trend.append(strategy.wallet_handler.get_balance())
-    res = TestResult.construct(strategy, initial_balance, len(data))
+    res = TestResult.construct(strategy, initial_balance, len(data), timeframe)
     return res, balance_trend, index

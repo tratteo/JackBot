@@ -9,23 +9,15 @@ from itertools import repeat
 from numpy import genfromtxt
 
 import config
-from bot import dataset_evaluator
+from bot import dataset_evaluator, lib
 from bot.core import TestWallet, Strategy
 from bot.dataset_evaluator import TestResult
 from bot.lib import ProgressBar
 
 
-class TrainingResult:
-    def __init__(self, parameters: list[float], strategy: str):
-        self.parameters = parameters
-        self.strategy = strategy
-
-    def to_json(self):
-        return json.dumps(self.__dict__, default = lambda x: x.__dict__, indent = 4)
-
-
 class Gene:
-    def __init__(self, lower_bound: float = float("-inf"), upper_bound: float = float("inf"), value: float = None):
+    def __init__(self, name: str, lower_bound: float = float("-inf"), upper_bound: float = float("inf"), value: float = None):
+        self.name = name
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         self.value = value if value is not None else random.uniform(lower_bound, upper_bound)
@@ -42,7 +34,17 @@ class Gene:
             self._value = self.lower_bound if val < self.lower_bound else self.upper_bound
 
     def __str__(self):
-        return "[" + str(self.lower_bound) + ", " + str(self.upper_bound) + "]: " + "{:.3f}".format(self.value)
+        return "{:<25s}[{:.2f}, {:.2f}]: {:.2f}".format(self.name, self.lower_bound, self.upper_bound, self.value)
+
+
+class TrainingResult:
+    def __init__(self, parameters: list[Gene], strategy: str, timeframe: str):
+        self.strategy = strategy
+        self.timeframe = timeframe
+        self.parameters = parameters
+
+    def to_json(self):
+        return json.dumps(self.__dict__, default = lambda x: x.__dict__, indent = 4)
 
 
 class _Individual:
@@ -55,15 +57,16 @@ class _Individual:
         self.fitness = 0
         self.test_result = None
 
-    def build_strategy(self) -> Strategy:
-        return self.strategy_class(TestWallet.factory(), *[g.value for g in self.genome])
+    def build_strategy(self, initial_balance: int) -> Strategy:
+        return self.strategy_class(TestWallet.factory(initial_balance), **dict([(p.name, p.value) for p in self.genome]))
 
     def __str__(self):
         s = "Strategy: " + str(self.strategy_class)
-        s += "\nGenome: | "
-        for g in self.genome: s += str(g) + " | "
+        s += "\n\nGenome:\n"
+        for index, gene in enumerate(self.genome):
+            s += str(gene) + "\n"
         s += "\nFitness: " + str(self.fitness)
-        s += "\n\nTest\n" + str(self.test_result)
+        s += "\n\nTest:\n" + str(self.test_result)
         return s
 
     def calculate_fitness(self, test_result: TestResult) -> float:
@@ -71,10 +74,11 @@ class _Individual:
         positions_percentage = 0
         for p in test_result.closed_positions:
             val = p.result_percentage
+            # losses are 15% more serious
+            # if val < 0: val *= 1.15
             positions_percentage += val
         balance_ratio = test_result.final_balance / test_result.initial_balance
-        # self.fitness = math.exp((math.pow(abs(balance_ratio), 1.25) * positions_percentage * math.pow(test_result.win_ratio + 1, 2.75)) / (288 * test_result.days))
-        self.fitness = math.exp(positions_percentage * math.pow(test_result.win_ratio + 1, 1.5) / test_result.days)
+        self.fitness = math.exp(balance_ratio * positions_percentage * math.pow(test_result.win_ratio + 1, 1.75) / (test_result.minutes / test_result.time_frame_minutes))
         if self.fitness < 0: self.fitness = 0
         return self.fitness
 
@@ -88,6 +92,8 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     processes_number = kwargs.get("processes_number") if kwargs.get("processes_number") is not None else population_number if population_number <= config.MAX_PROCESSES_NUMBER else config.MAX_PROCESSES_NUMBER
     mutation_type = kwargs.get("mutation_type") if kwargs.get("mutation_type") is not None else "uniform"
     max_iterations = kwargs.get("max_iterations") if kwargs.get("max_iterations") is not None else float("inf")
+    timeframe = kwargs.get("timeframe") if kwargs.get("timeframe") is not None else 5
+    initial_balance = kwargs.get("initial_balance") if kwargs.get("initial_balance") is not None else 10000
     report_path = kwargs.get("report_path")
 
     population = []
@@ -98,7 +104,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     progress_bar = ProgressBar.create(len(data)).width(30).no_percentage().build()
     workers_pool = multiprocessing.Pool(processes_number)
 
-    print("Starting " + str(population_number) + " parallel simulations on " + str(data_path))
+    print("Starting " + str(population_number) + " parallel simulations on " + str(data_path) + " | " + lib.get_flag_from_minutes(timeframe))
 
     # Instantiate random ancestors
     for i in range(population_number):
@@ -113,7 +119,16 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
         progress_bar.reset()
         start = time.time()
         try:
-            test_results_async = workers_pool.starmap_async(dataset_evaluator.evaluate, zip([i.build_strategy() for i in population], repeat(1000), repeat(data), repeat(progress_bar.step), repeat(1440), range(population_number)))
+            test_results_async = workers_pool.starmap_async(
+                dataset_evaluator.evaluate,
+                zip([i.build_strategy(initial_balance) for i in population],
+                    repeat(initial_balance),
+                    repeat(data),
+                    repeat(progress_bar.step),
+                    repeat(1440),
+                    repeat(timeframe),
+                    range(population_number)))
+
             test_results = test_results_async.get(timeout = 1000)
             if test_results is None:
                 break
@@ -122,9 +137,10 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
             workers_pool.terminate()
             workers_pool.join()
             break
+
         end = time.time()
         progress_bar.dispose()
-        print("Epoch " + str(epoch) + " completed in " + str(end - start) + "s", flush = True)
+        print("Epoch " + str(epoch) + " completed in " + "{:.3f}".format(end - start) + "s", flush = True)
 
         # Compute fitness and results
         for result, balance, index in test_results:
@@ -133,10 +149,10 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
         # Calculate champion
         epoch_champion = max(population, key = lambda x: x.fitness)
 
-        if epoch_champion.fitness > champion.fitness:
+        if champion is None or epoch_champion.fitness > champion.fitness:
             champion = copy.deepcopy(epoch_champion)
             with open(result_path, "w") as res_out_file:
-                res_out_file.write(TrainingResult([g.value for g in epoch_champion.genome], epoch_champion.strategy_class.__name__).to_json())
+                res_out_file.write(TrainingResult([g for g in epoch_champion.genome], epoch_champion.strategy_class.__name__, lib.get_flag_from_minutes(timeframe)).to_json())
             # print("Evaluating champion...")
             # res, i = dataset_evaluator.evaluate(epoch_champion.strategy, 1000, data, None, False, 0)
             # print(str(res))
@@ -145,7 +161,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
                 outfile.write("Epoch champion:\n")
                 outfile.write(str(epoch_champion))
                 if champion is not None:
-                    outfile.write("\n" + "-" * 50)
+                    outfile.write("\n\n" + "-" * 100 + "\n")
                     outfile.write("\nChampion:\n")
                     outfile.write(str(champion))
 
@@ -193,13 +209,13 @@ def __crossover_operator(key: str, parent1: _Individual, parent2: _Individual) -
         # Uniform crossover operator
         for g1, g2 in zip(parent1.genome, parent2.genome):
             if random.random() < 0.5:
-                new_genome.append(Gene(g1.lower_bound, g1.upper_bound, g1.value))
+                new_genome.append(Gene(g1.name, g1.lower_bound, g1.upper_bound, g1.value))
             else:
-                new_genome.append(Gene(g1.lower_bound, g1.upper_bound, g2.value))
+                new_genome.append(Gene(g1.name, g1.lower_bound, g1.upper_bound, g2.value))
     elif key == "average":
         # Average crossover operator
         for g1, g2 in zip(parent1.genome, parent2.genome):
-            new_genome.append(Gene(g1.lower_bound, g1.upper_bound, (g1.value + g2.value) / 2))
+            new_genome.append(Gene(g1.name, g1.lower_bound, g1.upper_bound, (g1.value + g2.value) / 2))
 
     elif key == "s-point":
         point = random.randint(0, len(parent1.genome) - 1)

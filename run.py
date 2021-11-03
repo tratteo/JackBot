@@ -20,13 +20,13 @@ def update(msg):
 
 
 def helper(helper_str: str):
-    print(helper_str, flush=True)
+    print(helper_str, flush = True)
     exit(0)
 
 
 def failure(helper_str: str):
-    print('Wrong syntax \n', flush=True)
-    print(helper_str, flush=True)
+    print('Wrong syntax \n', flush = True)
+    print(helper_str, flush = True)
     exit(1)
 
 
@@ -44,16 +44,16 @@ strategy_class = getattr(importlib.import_module("strategies." + strategy_name),
 wallet = BinanceWallet(options, config.API_KEY, config.API_SECRET)
 strategy = strategy_class(wallet, *data["parameters"])
 
-twm = ThreadedWebsocketManager(api_key=config.API_KEY, api_secret=config.API_SECRET)
+twm = ThreadedWebsocketManager(api_key = config.API_KEY, api_secret = config.API_SECRET)
 twm.start()
-twm.start_kline_socket(callback=update, symbol=options["first"] + options["second"])
+twm.start_kline_socket(callback = update, symbol = options["first"] + options["second"])
 
 while True:
     inp = input()
     clear()
     if inp == 'balance':
-        print(options["first"] , (wallet.get_asset_balance()))
-        print(options["second"] , wallet.get_second_balance())
+        print(options["first"], (wallet.get_asset_balance()))
+        print(options["second"], wallet.get_second_balance())
 
     elif inp == 'q':  # l'errore che genera può essere ignorato
         twm.stop()
@@ -61,14 +61,3 @@ while True:
 
     else:
         print("invalid input")
-
-
-
-
-
-
-
-
-
-
-

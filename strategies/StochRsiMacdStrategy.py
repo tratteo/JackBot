@@ -12,35 +12,31 @@ class StochRsiMacdStrategy(Strategy):
         risk_reward_ratio\n
         atr_factor\n
         intervals_tolerance\n
-        investment_rate\n
+        investment_ratio\n
         stoch_overbought\n
         stoch_oversold
     """
 
-    STOCH_FAST_K = 14
-    STOCH_SLOW_K = 1
-    STOCH_SLOW_D = 3
-    RSI_PERIOD = 14
     MAX_OPEN_POSITIONS_NUMBER = 4
 
-    def __init__(self, wallet_handler: WalletHandler, *strategy_params):
-        self.risk_reward_ratio = strategy_params[0]
-        self.atr_factor = strategy_params[1]
-        self.intervals_tolerance = strategy_params[2]
-        self.investment_rate = strategy_params[3]
-        self.stoch_overbought = strategy_params[4]
-        self.stoch_oversold = strategy_params[5]
+    def __init__(self, wallet_handler: WalletHandler, **strategy_params):
+        self.risk_reward_ratio = strategy_params["risk_reward_ratio"]
+        self.atr_factor = strategy_params["atr_factor"]
+        self.intervals_tolerance = strategy_params["intervals_tolerance"]
+        self.investment_rate = strategy_params["investment_ratio"]
+        self.stoch_overbought = strategy_params["stoch_overbought"]
+        self.stoch_oversold = strategy_params["stoch_oversold"]
         super().__init__(wallet_handler, self.MAX_OPEN_POSITIONS_NUMBER)
 
     def compute_indicators(self) -> list[tuple[str, any]]:
         return [
             ("stoch", technical.STOCH(np.array(self.highs), np.array(self.lows), np.array(self.closes),
-                                      fastk_period = self.STOCH_FAST_K,
-                                      slowk_period = self.STOCH_SLOW_K,
-                                      slowd_period = self.STOCH_SLOW_D,
+                                      fastk_period = 14,
+                                      slowk_period = 1,
+                                      slowd_period = 3,
                                       slowk_matype = 0, slowd_matype = 0)),
             ("atr", technical.ATR(np.array(self.highs), np.array(self.lows), np.array(self.closes))),
-            ("rsi", technical.RSI(np.array(self.closes), self.RSI_PERIOD)),
+            ("rsi", technical.RSI(np.array(self.closes), 14)),
             ("macd", technical.MACD(np.array(self.closes)))]
 
     def get_margin_investment(self):

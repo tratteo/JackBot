@@ -94,8 +94,8 @@ class Position:
 
                 self.order_info = wallet_handler.client.create_order(
                     symbol = pair,
-                    side = 'BUY',
-                    type = 'MARKET',
+                    side = "BUY",
+                    type = "MARKET",
                     quantity = self.investment
                 )
 
@@ -107,14 +107,10 @@ class Position:
         print("Order opened: ")
         print('symbol: ' + self.order_info['symbol'] + '\nexecutedQty ' + self.order_info['executedQty'])
 
-
-
     def close(self, won: bool, close_price: float, wallet_handler):
 
         self.won = won
         self.closed = True
-
-
 
         try:
             if isinstance(wallet_handler, BinanceWallet):
@@ -130,10 +126,10 @@ class Position:
 
                 pair = options["first"] + options["second"]
                 self.order_info = wallet_handler.client.create_order(
-                    symbol=pair,
-                    side='SELL',
-                    type='MARKET',
-                    quantity=self.investment
+                    symbol = pair,
+                    side = 'SELL',
+                    type = 'MARKET',
+                    quantity = self.investment
                 )
 
         except BinanceAPIException as e:
@@ -244,7 +240,8 @@ class WalletHandler(ABC):
     def get_asset_balance(self):
         pass
 
-    def get_second_balance(self):
+    @abstractmethod
+    def get_balance(self):
         pass
 
 
@@ -255,15 +252,20 @@ class BinanceWallet(WalletHandler):
         self.client = Client(api_key, api_secret)
         self.client.API_URL = 'https://testnet.binance.vision/api'
 
+    def get_balance(self):
+        return self.get_second_balance()
+
     def get_asset_balance(self):
-        return float(self.client.get_asset_balance(asset=self.options["first"])["free"])
+        return float(self.client.get_asset_balance(asset = self.options["first"])["free"])
 
     def get_second_balance(self):
-        return float(self.client.get_asset_balance(asset=self.options["second"])["free"])
-
+        return float(self.client.get_asset_balance(asset = self.options["second"])["free"])
 
 
 class TestWallet(WalletHandler):
+
+    def get_asset_balance(self):
+        pass
 
     @classmethod
     def factory(cls, initial_balance: float = 1000):
@@ -356,6 +358,7 @@ class Strategy(ABC):
                 to_remove.append(pos)
                 self.closed_positions.append(pos)
                 if verbose: print("Closed position: " + str(pos))
+
         # Remove all the closed positions
         for rem in to_remove:
             self.open_positions.remove(rem)
