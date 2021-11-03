@@ -48,7 +48,6 @@ class TestResult:
         self.initial_balance = 0
         self.opened_positions = 0
         self.final_balance = 0
-        self.total_positions_result = 0
         self.time_frame_minutes = 0
 
     @classmethod
@@ -63,7 +62,6 @@ class TestResult:
         won = 0
         for c in result.closed_positions:
             result.total_profit += c.profit
-            result.total_positions_result += c.result_percentage
             if c.won: won += 1
         result.win_ratio = 0
         result.final_balance = result.initial_balance + result.total_profit
@@ -84,7 +82,7 @@ class TestResult:
                "\n{:<25s}{:^4.3f}".format("Initial balance: ", self.initial_balance) + \
                "\n{:<25s}{:^4.3f}".format("Final balance: ", self.final_balance) + \
                "\n{:<25s}{:^4.3f}".format("Total profit: ", self.total_profit) + \
-               "\n{:<25s}{:^4.0f}".format("Opened positions: ", self.opened_positions) + \
+               "\n{:<25s}{:^4}".format("Opened positions: ", self.opened_positions) + \
                "\n{:<25s}{:^4.3f}".format("Win rate: ", self.win_ratio * 100) + "%" + \
                "\n{:<25s}{:^4.3f}".format("Estimated apy: ", self.estimated_apy) + "%"
 
@@ -105,7 +103,6 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
 
     # Report progress each week
     progress_reporter_span = 1440 * 7
-    print(timeframe)
     try:
         while epoch < time_span:
             if epoch + 1 >= len(data): break

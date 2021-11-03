@@ -12,20 +12,20 @@ class StochRsiMacdStrategy(Strategy):
         risk_reward_ratio\n
         atr_factor\n
         intervals_tolerance\n
-        investment_rate\n
+        investment_ratio\n
         stoch_overbought\n
         stoch_oversold
     """
 
     MAX_OPEN_POSITIONS_NUMBER = 4
 
-    def __init__(self, wallet_handler: WalletHandler, *strategy_params):
-        self.risk_reward_ratio = strategy_params[0]
-        self.atr_factor = strategy_params[1]
-        self.intervals_tolerance = strategy_params[2]
-        self.investment_rate = strategy_params[3]
-        self.stoch_overbought = strategy_params[4]
-        self.stoch_oversold = strategy_params[5]
+    def __init__(self, wallet_handler: WalletHandler, **strategy_params):
+        self.risk_reward_ratio = strategy_params["risk_reward_ratio"]
+        self.atr_factor = strategy_params["atr_factor"]
+        self.intervals_tolerance = strategy_params["intervals_tolerance"]
+        self.investment_rate = strategy_params["investment_ratio"]
+        self.stoch_overbought = strategy_params["stoch_overbought"]
+        self.stoch_oversold = strategy_params["stoch_oversold"]
         super().__init__(wallet_handler, self.MAX_OPEN_POSITIONS_NUMBER)
 
     def compute_indicators(self) -> list[tuple[str, any]]:

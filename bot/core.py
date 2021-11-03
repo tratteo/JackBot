@@ -325,6 +325,7 @@ class Strategy(ABC):
                 to_remove.append(pos)
                 self.closed_positions.append(pos)
                 if verbose: print("Closed position: " + str(pos))
+                
         # Remove all the closed positions
         for rem in to_remove:
             self.open_positions.remove(rem)

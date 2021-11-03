@@ -52,7 +52,7 @@ if report_path is not None:
 
 # Instantiate the strategy
 strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)
-genome = [Gene(t["lower_bound"], t["upper_bound"], lib.try_get_json_attr("_value", t)) for t in data["parameters"]]
+genome = [Gene(t["name"], t["lower_bound"], t["upper_bound"], lib.try_get_json_attr("_value", t)) for t in data["parameters"]]
 
 # Train parallel
 if __name__ == "__main__":

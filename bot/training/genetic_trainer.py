@@ -15,18 +15,9 @@ from bot.dataset_evaluator import TestResult
 from bot.lib import ProgressBar
 
 
-class TrainingResult:
-    def __init__(self, parameters: list[float], strategy: str, timeframe: str):
-        self.strategy = strategy
-        self.timeframe = timeframe
-        self.parameters = parameters
-
-    def to_json(self):
-        return json.dumps(self.__dict__, default = lambda x: x.__dict__, indent = 4)
-
-
 class Gene:
-    def __init__(self, lower_bound: float = float("-inf"), upper_bound: float = float("inf"), value: float = None):
+    def __init__(self, name: str, lower_bound: float = float("-inf"), upper_bound: float = float("inf"), value: float = None):
+        self.name = name
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         self.value = value if value is not None else random.uniform(lower_bound, upper_bound)
@@ -43,7 +34,17 @@ class Gene:
             self._value = self.lower_bound if val < self.lower_bound else self.upper_bound
 
     def __str__(self):
-        return "[" + str(self.lower_bound) + ", " + str(self.upper_bound) + "]: " + "{:.3f}".format(self.value)
+        return "{:<25s}[{:.2f}, {:.2f}]: {:.2f}".format(self.name, self.lower_bound, self.upper_bound, self.value)
+
+
+class TrainingResult:
+    def __init__(self, parameters: list[Gene], strategy: str, timeframe: str):
+        self.strategy = strategy
+        self.timeframe = timeframe
+        self.parameters = parameters
+
+    def to_json(self):
+        return json.dumps(self.__dict__, default = lambda x: x.__dict__, indent = 4)
 
 
 class _Individual:
@@ -57,14 +58,15 @@ class _Individual:
         self.test_result = None
 
     def build_strategy(self, initial_balance: int) -> Strategy:
-        return self.strategy_class(TestWallet.factory(initial_balance), *[g.value for g in self.genome])
+        return self.strategy_class(TestWallet.factory(initial_balance), **dict([(p.name, p.value) for p in self.genome]))
 
     def __str__(self):
         s = "Strategy: " + str(self.strategy_class)
-        s += "\nGenome: | "
-        for g in self.genome: s += str(g) + " | "
+        s += "\n\nGenome:\n"
+        for index, gene in enumerate(self.genome):
+            s += str(gene) + "\n"
         s += "\nFitness: " + str(self.fitness)
-        s += "\n\nTest\n" + str(self.test_result)
+        s += "\n\nTest:\n" + str(self.test_result)
         return s
 
     def calculate_fitness(self, test_result: TestResult) -> float:
@@ -150,7 +152,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
         if champion is None or epoch_champion.fitness > champion.fitness:
             champion = copy.deepcopy(epoch_champion)
             with open(result_path, "w") as res_out_file:
-                res_out_file.write(TrainingResult([g.value for g in epoch_champion.genome], epoch_champion.strategy_class.__name__, lib.get_flag_from_minutes(timeframe)).to_json())
+                res_out_file.write(TrainingResult([g for g in epoch_champion.genome], epoch_champion.strategy_class.__name__, lib.get_flag_from_minutes(timeframe)).to_json())
             # print("Evaluating champion...")
             # res, i = dataset_evaluator.evaluate(epoch_champion.strategy, 1000, data, None, False, 0)
             # print(str(res))
@@ -159,7 +161,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
                 outfile.write("Epoch champion:\n")
                 outfile.write(str(epoch_champion))
                 if champion is not None:
-                    outfile.write("\n" + "-" * 50)
+                    outfile.write("\n\n" + "-" * 100 + "\n")
                     outfile.write("\nChampion:\n")
                     outfile.write(str(champion))
 
@@ -207,13 +209,13 @@ def __crossover_operator(key: str, parent1: _Individual, parent2: _Individual) -
         # Uniform crossover operator
         for g1, g2 in zip(parent1.genome, parent2.genome):
             if random.random() < 0.5:
-                new_genome.append(Gene(g1.lower_bound, g1.upper_bound, g1.value))
+                new_genome.append(Gene(g1.name, g1.lower_bound, g1.upper_bound, g1.value))
             else:
-                new_genome.append(Gene(g1.lower_bound, g1.upper_bound, g2.value))
+                new_genome.append(Gene(g1.name, g1.lower_bound, g1.upper_bound, g2.value))
     elif key == "average":
         # Average crossover operator
         for g1, g2 in zip(parent1.genome, parent2.genome):
-            new_genome.append(Gene(g1.lower_bound, g1.upper_bound, (g1.value + g2.value) / 2))
+            new_genome.append(Gene(g1.name, g1.lower_bound, g1.upper_bound, (g1.value + g2.value) / 2))
 
     elif key == "s-point":
         point = random.randint(0, len(parent1.genome) - 1)

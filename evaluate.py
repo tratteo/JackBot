@@ -37,7 +37,7 @@ with open(command_manager.get_p(0)) as file:
     options_file = json.load(file)
 
 # Get args
-initial_balance = 10000
+initial_balance = 1000
 arg = command_manager.get_k("-ib")
 if arg is not None: initial_balance = int(arg)
 
@@ -51,7 +51,7 @@ out = command_manager.get_k("-o")
 # Instantiate the strategy
 strategy_name = options_file["strategy"]
 strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)
-strategy = strategy_class(TestWallet.factory(initial_balance), *options_file["parameters"])
+strategy = strategy_class(TestWallet.factory(initial_balance), **dict([(p["name"], p["_value"]) for p in options_file["parameters"]]))
 
 # Load data
 print("Loading " + dataset + "...")

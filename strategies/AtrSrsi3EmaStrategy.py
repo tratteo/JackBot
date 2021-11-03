@@ -11,16 +11,16 @@ class AtrSrsi3EmaStrategy(Strategy):
     Parameters (4):
         risk_reward_ratio\n
         atr_factor\n
-        investment_rate\n
+        investment_ratio\n
         interval_tolerance
     """
-    MAX_OPEN_POSITIONS_NUMBER = 1
+    MAX_OPEN_POSITIONS_NUMBER = 5
 
-    def __init__(self, wallet_handler: WalletHandler, *strategy_params):
-        self.risk_reward_ratio = strategy_params[0]
-        self.atr_factor = strategy_params[1]
-        self.investment_rate = strategy_params[2]
-        self.interval_tolerance = strategy_params[3]
+    def __init__(self, wallet_handler: WalletHandler, **strategy_params):
+        self.risk_reward_ratio = strategy_params["risk_reward_ratio"]
+        self.atr_factor = strategy_params["atr_factor"]
+        self.investment_rate = strategy_params["investment_ratio"]
+        self.interval_tolerance = strategy_params["interval_tolerance"]
         super().__init__(wallet_handler, self.MAX_OPEN_POSITIONS_NUMBER)
 
     def compute_indicators(self) -> list[tuple[str, any]]:
@@ -63,7 +63,6 @@ class AtrSrsi3EmaStrategy(Strategy):
 
     def long_perpetual_condition(self, frame) -> bool:
         ema8, ema14, ema50 = self.get_indicator("8ema"), self.get_indicator("14ema"), self.get_indicator("50ema")
-
         return ema50[-1] < ema14[-1] < ema8[-1] < self.closes[-1]
 
     def long_event_condition(self, frame) -> bool:
