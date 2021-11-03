@@ -218,18 +218,19 @@ class WalletHandler(ABC):
 
 class BinanceWallet(WalletHandler):
 
-    @classmethod
-    def factory(cls, options, api_key, api_secret):
-        return BinanceWallet(options, api_key, api_secret)
-
-    def __init__(self, options, api_key: str, api_secret: str):
+    def __init__(self, options, api_key, api_secret):
         self.options = options
         self.client = Client(api_key, api_secret)
-        self.client.API_URL = "https://testnet.binance.vision/api"
+        self.client.API_URL = 'https://testnet.binance.vision/api'
 
     def get_balance(self):
-        print(self.client.get_asset_balance(asset = self.options["first"])["free"])
+        return self.get_second_balance()
+
+    def get_asset_balance(self):
         return float(self.client.get_asset_balance(asset = self.options["first"])["free"])
+
+    def get_second_balance(self):
+        return float(self.client.get_asset_balance(asset = self.options["second"])["free"])
 
 
 class TestWallet(WalletHandler):
@@ -325,7 +326,7 @@ class Strategy(ABC):
                 to_remove.append(pos)
                 self.closed_positions.append(pos)
                 if verbose: print("Closed position: " + str(pos))
-                
+
         # Remove all the closed positions
         for rem in to_remove:
             self.open_positions.remove(rem)
