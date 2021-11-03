@@ -1,22 +1,20 @@
-import sys
 import importlib
 import json
-from bot import core
-import time
-import datetime
-import config
-from bot.command.command_handler import CommandHandler
-from strategies.StochRsiMacdStrategy import *
-from time import sleep
-from binance import ThreadedWebsocketManager
 import os
+import sys
+
+from binance import ThreadedWebsocketManager
+
+import config
+from core.command_handler import CommandHandler
+from core.bot.wallet_handler import BinanceWallet
 
 
 def update(msg):
-    if msg['e'] != 'error':
+    if msg["e"] != "error":
         strategy.update_state(msg)
     else:
-        print('error in reception')
+        print("error in reception")
 
 
 def helper(helper_str: str):
@@ -25,13 +23,16 @@ def helper(helper_str: str):
 
 
 def failure(helper_str: str):
-    print('Wrong syntax \n', flush = True)
+    print("Wrong syntax \n", flush = True)
     print(helper_str, flush = True)
     exit(1)
 
 
+def clear():
+    os.system("cls")
+
+
 cmd = CommandHandler.create().positional("options").positional("strategy").on_fail(failure).on_help(helper).build(sys.argv)
-clear = lambda: os.system('cls')
 
 with open(cmd.get_p(0)) as file:
     options = json.load(file)
@@ -41,7 +42,7 @@ with open(cmd.get_p(1)) as file:
 
 strategy_name = data["strategy"]
 strategy_class = getattr(importlib.import_module("strategies." + strategy_name), strategy_name)
-wallet = BinanceWallet(options, config.API_KEY, config.API_SECRET)
+wallet = BinanceWallet.factory(options, config.API_KEY, config.API_SECRET)
 strategy = strategy_class(wallet, *data["parameters"])
 
 twm = ThreadedWebsocketManager(api_key = config.API_KEY, api_secret = config.API_SECRET)
@@ -51,11 +52,12 @@ twm.start_kline_socket(callback = update, symbol = options["first"] + options["s
 while True:
     inp = input()
     clear()
-    if inp == 'balance':
+    if inp == "balance":
         print(options["first"], (wallet.get_asset_balance()))
         print(options["second"], wallet.get_second_balance())
 
-    elif inp == 'q':  # l'errore che genera può essere ignorato
+    # Error can be ignored
+    elif inp == "q":
         twm.stop()
         exit()
 

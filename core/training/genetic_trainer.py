@@ -9,10 +9,12 @@ from itertools import repeat
 from numpy import genfromtxt
 
 import config
-from bot import dataset_evaluator, lib
-from bot.core import TestWallet, Strategy
-from bot.dataset_evaluator import TestResult
-from bot.lib import ProgressBar
+from core import lib
+from core.bot import dataset_evaluator
+from core.bot.strategy import Strategy
+from core.bot.dataset_evaluator import TestResult
+from core.lib import ProgressBar
+from core.bot.wallet_handler import TestWallet
 
 
 class Gene:

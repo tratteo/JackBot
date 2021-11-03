@@ -1,7 +1,8 @@
 import numpy as np
 import talib as technical
 
-from bot.core import *
+from core.bot.condition import EventStrategyCondition, PerpetualStrategyCondition, BoundedStrategyCondition
+from core.bot.strategy import *
 
 
 class StochRsiMacdStrategy(Strategy):

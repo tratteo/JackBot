@@ -1,11 +1,12 @@
 import importlib
+import json
 import sys
 
-from bot import lib
-from bot.command.command_handler import CommandHandler
-from bot.training import genetic_trainer
-from bot.training.genetic_trainer import Gene
-from strategies.StochRsiMacdStrategy import *
+import config
+from core import lib
+from core.command_handler import CommandHandler
+from core.training import genetic_trainer
+from core.training.genetic_trainer import Gene
 
 
 def helper(helper_str: str):

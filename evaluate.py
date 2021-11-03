@@ -1,14 +1,16 @@
 import importlib
+import json
 import sys
 
 import matplotlib.pyplot as plot
 import talib
 from numpy import genfromtxt
 
-from bot import dataset_evaluator
-from bot import lib
-from bot.command.command_handler import CommandHandler
-from bot.lib import ProgressBar
+import config
+from core.bot import dataset_evaluator
+from core import lib
+from core.command_handler import CommandHandler
+from core.lib import ProgressBar
 from strategies.StochRsiMacdStrategy import *
 
 

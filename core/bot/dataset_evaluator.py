@@ -2,8 +2,9 @@ import copy
 
 import numpy
 
-from bot import lib
-from bot.core import Strategy, TestWallet
+from core import lib
+from core.bot.strategy import Strategy
+from core.bot.wallet_handler import TestWallet
 
 OPEN_T: int = 0
 HIGH: int = 2

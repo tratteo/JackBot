@@ -1,7 +1,8 @@
 import numpy as np
 import talib as technical
 
-from bot.core import *
+from core.bot.condition import PerpetualStrategyCondition, EventStrategyCondition
+from core.bot.strategy import *
 
 
 class AtrSrsi3EmaStrategy(Strategy):
@@ -47,6 +48,7 @@ class AtrSrsi3EmaStrategy(Strategy):
             return open_price - (self.risk_reward_ratio * self.atr_factor * atr[-1])
 
     def get_margin_investment(self) -> float:
+
         return self.wallet_handler.get_balance() * self.investment_rate
 
     def get_long_conditions(self) -> List[StrategyCondition]:
