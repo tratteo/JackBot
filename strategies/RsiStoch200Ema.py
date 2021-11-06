@@ -14,8 +14,7 @@ class RsiStoch200Ema(Strategy):
             atr_factor\n
             intervals_tolerance\n
             investment_ratio\n
-            stoch_overbought\n
-            stoch_oversold
+            
         """
     MAX_OPEN_POSITIONS_NUMBER = 4
 
