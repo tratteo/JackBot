@@ -9,6 +9,9 @@ class RsiStoch200Ema(Strategy):
     """
         STOCH, 200EMA, RSI strategy.
 
+        enters only if close is above 200EMA, checks for hidden divergences on closes and RSI,
+        if there is one hidden divergence open position after stoch-indicator crosses.
+
         Parameters (6):
             risk_reward_ratio\n
             atr_factor\n
