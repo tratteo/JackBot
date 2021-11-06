@@ -17,7 +17,7 @@ class Strategy(ABC):
         self.lows = []
         self.__long_conditions = self.get_long_conditions()
         self.__short_conditions = self.get_short_conditions()
-        self.__longest_period = 150
+        self.__longest_period = 500
         self.wallet_handler = wallet_handler
         self.__indicators = dict()
 
