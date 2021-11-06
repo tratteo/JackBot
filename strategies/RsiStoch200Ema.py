@@ -14,7 +14,7 @@ class RsiStoch200Ema(Strategy):
             atr_factor\n
             intervals_tolerance\n
             investment_ratio\n
-            
+            hidden_divergence_timeframe
         """
     MAX_OPEN_POSITIONS_NUMBER = 4
 
