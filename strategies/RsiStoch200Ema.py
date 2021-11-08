@@ -107,7 +107,7 @@ class RsiStoch200Ema(Strategy):
             self.last_low_rsi = min(rsi)
         return self.last_low_rsi > self.rsi[-1]
 
-    def long_rsi_condition(self, frame) -> bool:
+    def short_rsi_condition(self, frame) -> bool:
         rsi = self.get_indicator('rsi')
         if len(rsi) > 0 and len(rsi) > self.hidden_divergence_timeframe:
             self.last_low_rsi = min(rsi[-self.hidden_divergence_timeframe:-1])

@@ -15,6 +15,7 @@ class Strategy(ABC):
         self.closes = []
         self.highs = []
         self.lows = []
+        self.opens = []
         self.__long_conditions = self.get_long_conditions()
         self.__short_conditions = self.get_short_conditions()
         self.__longest_period = 500
@@ -83,6 +84,7 @@ class Strategy(ABC):
             self.closes.append(close_price)
             self.highs.append(float(candle["h"]))
             self.lows.append(float(candle["l"]))
+            self.opens.append(float(candle["o"]))
 
             for p in self.compute_indicators():
                 self.__indicators[p[0]] = p[1]
@@ -90,6 +92,7 @@ class Strategy(ABC):
             if len(self.closes) >= self.__longest_period: self.closes = self.closes[-self.__longest_period:]
             if len(self.highs) >= self.__longest_period: self.highs = self.highs[-self.__longest_period:]
             if len(self.lows) >= self.__longest_period: self.lows = self.lows[-self.__longest_period:]
+            if len(self.lows) >= self.__longest_period: self.opens = self.lows[-self.__longest_period:]
             # Tick all conditions so they can update their internal state
             for c in self.__long_conditions:
                 c.tick(frame)
