@@ -1,7 +1,6 @@
 import importlib
 import json
 import os
-import sys
 
 from binance import ThreadedWebsocketManager
 
@@ -30,6 +29,7 @@ def failure(helper_str: str):
 
 def clear():
     os.system("cls")
+
 
 
 cmd = CommandHandler.create().positional("options").positional("strategy").on_fail(failure).on_help(helper).build(sys.argv)
