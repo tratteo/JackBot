@@ -19,14 +19,13 @@ class Strategy(ABC):
         self.__short_conditions = self.get_short_conditions()
         self.__longest_period = 500
         self.wallet_handler = wallet_handler
-        self.__indicators = dict()
-
-    @abstractmethod
-    def compute_indicators(self) -> list[tuple[str, any]]:
-        pass
 
     @abstractmethod
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
+        pass
+
+    @abstractmethod
+    def compute_indicators_step(self, frame):
         pass
 
     @abstractmethod
@@ -51,9 +50,6 @@ class Strategy(ABC):
             if not c.satisfied:
                 return False
         return True
-
-    def get_indicator(self, key: str):
-        return self.__indicators.get(key)
 
     @staticmethod
     def __reset_conditions(conditions):
@@ -84,8 +80,7 @@ class Strategy(ABC):
             self.highs.append(float(candle["h"]))
             self.lows.append(float(candle["l"]))
 
-            for p in self.compute_indicators():
-                self.__indicators[p[0]] = p[1]
+            self.compute_indicators_step(frame)
 
             if len(self.closes) >= self.__longest_period: self.closes = self.closes[-self.__longest_period:]
             if len(self.highs) >= self.__longest_period: self.highs = self.highs[-self.__longest_period:]

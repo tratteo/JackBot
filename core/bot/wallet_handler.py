@@ -10,6 +10,21 @@ class WalletHandler(ABC):
         pass
 
 
+class KucoinWallet(WalletHandler):
+
+    @classmethod
+    def factory(cls, options, api_key: str, api_secret: str, api_url: str):
+        return KucoinWallet(options, api_key, api_secret, api_url)
+
+    def __init__(self, options, api_key: str, api_secret: str, api_url: str):
+        self.options = options
+        self.client = Client(api_key, api_secret)
+        self.client.API_URL = api_url
+
+    def get_balance(self) -> float:
+        pass
+
+
 class BinanceWallet(WalletHandler):
 
     @classmethod

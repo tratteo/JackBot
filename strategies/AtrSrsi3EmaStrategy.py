@@ -15,6 +15,11 @@ class AtrSrsi3EmaStrategy(Strategy):
         investment_ratio\n
         interval_tolerance
     """
+
+    def compute_indicators_step(self, frame):
+
+        pass
+
     MAX_OPEN_POSITIONS_NUMBER = 5
 
     def __init__(self, wallet_handler: WalletHandler, **strategy_params):
