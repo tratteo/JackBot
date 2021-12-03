@@ -1,6 +1,6 @@
 {
   "strategy": "AtrSrsi3EmaStrategy",
-  "timeframe": "5m",
+  "timeframe": "30m",
   "parameters": [
     {
       "name": "risk_reward_ratio",
@@ -31,9 +31,9 @@
     "mutation_rate": 0.3,
     "crossover_operator": "uniform",
     "crossover_rate": 0.85,
-    "population_number": 14,
-    "processes_number": 14,
+    "population_number": 8,
+    "processes_number": 8,
     "mutation_type": "gaussian",
-    "max_iterations": 100
+    "max_iterations": 10
   }
 }

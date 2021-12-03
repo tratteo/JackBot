@@ -19,6 +19,10 @@ class RsiStoch200Ema(Strategy):
             investment_ratio\n
             hidden_divergence_timeframe
         """
+
+    def compute_indicators_step(self, frame):
+        pass
+
     MAX_OPEN_POSITIONS_NUMBER = 4
 
     def __init__(self, wallet_handler: WalletHandler, **strategy_params):
@@ -28,19 +32,20 @@ class RsiStoch200Ema(Strategy):
         self.investment_rate = strategy_params["investment_ratio"]
         self.hidden_divergence_timeframe = int(strategy_params["hidden_divergence_timeframe"])
         self.last_low_closes = 0
+
         self.last_low_rsi = 0
         super().__init__(wallet_handler, self.MAX_OPEN_POSITIONS_NUMBER)
 
     def compute_indicators(self) -> list[tuple[str, any]]:
         return [
             ("stoch", technical.STOCH(np.array(self.highs), np.array(self.lows), np.array(self.closes),
-                                      fastk_period=14,
-                                      slowk_period=1,
-                                      slowd_period=3,
-                                      slowk_matype=0, slowd_matype=0)),
+                                      fastk_period = 14,
+                                      slowk_period = 1,
+                                      slowd_period = 3,
+                                      slowk_matype = 0, slowd_matype = 0)),
             ("atr", technical.ATR(np.array(self.highs), np.array(self.lows), np.array(self.closes))),
             ("rsi", technical.RSI(np.array(self.closes), 14)),
-            ('200ema', technical.EMA(np.array(self.closes), timeperiod=200))]
+            ('200ema', technical.EMA(np.array(self.closes), timeperiod = 200))]
 
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
         atr = self.get_indicator("atr")

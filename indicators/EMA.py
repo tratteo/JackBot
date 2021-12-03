@@ -1,14 +1,12 @@
-import collections
-import itertools
-import talib as ta
 import numpy as np
-from collections import deque
+import talib as ta
 from numpy import genfromtxt
+
 import config
 
 
 class EMA:
-    def __init__(self, smoothing=2, period=20):
+    def __init__(self, smoothing = 2, period = 20):
         self.smoothing = smoothing
         self.first_values = []
         self.previous_val = 0
@@ -21,8 +19,8 @@ class EMA:
             self.previous_val = np.mean(self.first_values)
             return np.nan
         else:
-            smooth = self.smoothing/(1+self.period)
-            self.previous_val = value*smooth + self.previous_val*(1- smooth)
+            smooth = self.smoothing / (1 + self.period)
+            self.previous_val = value * smooth + self.previous_val * (1 - smooth)
             return self.previous_val
 
     def reset(self):
@@ -41,11 +39,11 @@ if __name__ == "__main__":
     CLOSE: int = 4
     CLOSE_T: int = 6
 
-    data = genfromtxt(r"..\bot\data\ETHUSDT_1-6_2021.csv", delimiter=config.DEFAULT_DELIMITER)
-    close = data[:,CLOSE][:100]
-    high = data[:,HIGH][:100]
-    low = data[:,LOW][:100]
+    data = genfromtxt(r"..\bot\data\ETHUSDT_1-6_2021.csv", delimiter = config.DEFAULT_DELIMITER)
+    close = data[:, CLOSE][:100]
+    high = data[:, HIGH][:100]
+    low = data[:, LOW][:100]
 
     for n, i in enumerate(close):
-        print(n, " my " , ema.compute_next(i), " ta ",  ta.EMA(close, 20)[n])
+        print(n, " my ", ema.compute_next(i), " ta ", ta.EMA(close, 20)[n])
     # print(ta.EMA(a, 20)[:200])

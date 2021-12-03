@@ -12,9 +12,6 @@ class Strategy(ABC):
         self.max_positions = max_positions
         self.open_positions = []
         self.closed_positions = []
-        self.closes = []
-        self.highs = []
-        self.lows = []
         self.__long_conditions = self.get_long_conditions()
         self.__short_conditions = self.get_short_conditions()
         self.__longest_period = 500
@@ -76,21 +73,14 @@ class Strategy(ABC):
             self.open_positions.remove(rem)
 
         if candle["x"]:
-            self.closes.append(close_price)
-            self.highs.append(float(candle["h"]))
-            self.lows.append(float(candle["l"]))
 
-            self.compute_indicators_step(frame)
-
-            if len(self.closes) >= self.__longest_period: self.closes = self.closes[-self.__longest_period:]
-            if len(self.highs) >= self.__longest_period: self.highs = self.highs[-self.__longest_period:]
-            if len(self.lows) >= self.__longest_period: self.lows = self.lows[-self.__longest_period:]
+            self.compute_indicators_step(candle)
             # Tick all conditions so they can update their internal state
             for c in self.__long_conditions:
-                c.tick(frame)
+                c.tick(candle)
 
             for c in self.__short_conditions:
-                c.tick(frame)
+                c.tick(candle)
 
             if len(self.open_positions) < self.max_positions and self.wallet_handler.get_balance() > 0:
                 if self.__check_conditions(self.__long_conditions):

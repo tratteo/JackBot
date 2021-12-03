@@ -1,18 +1,18 @@
 {
     "strategy": "AtrSrsi3EmaStrategy",
-    "timeframe": "1h",
+    "timeframe": "30m",
     "parameters": [
         {
             "name": "risk_reward_ratio",
             "lower_bound": 0.5,
             "upper_bound": 5,
-            "_value": 1.622772418241155
+            "_value": 1.4067457607546439
         },
         {
             "name": "atr_factor",
             "lower_bound": 1,
             "upper_bound": 6,
-            "_value": 4.600303709123812
+            "_value": 5.143835940244503
         },
         {
             "name": "investment_ratio",
@@ -24,7 +24,7 @@
             "name": "interval_tolerance",
             "lower_bound": 1,
             "upper_bound": 10,
-            "_value": 4.011158881387242
+            "_value": 10
         }
     ]
 }
