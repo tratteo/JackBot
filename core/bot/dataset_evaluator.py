@@ -133,8 +133,8 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
             epoch += 1
     except (KeyboardInterrupt, SystemExit):
         print("\nWorker " + str(index) + " interrupted", flush = True)
-        for p in strategy.open_positions:
-            strategy.wallet_handler.balance += p.investment
+        # for p in strategy.open_positions:
+        #     strategy.wallet_handler.balance += p.investment
         return None, balance_trend, index
 
     if progress_delegate is not None: progress_delegate(time_span - epoch)

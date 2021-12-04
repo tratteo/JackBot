@@ -31,9 +31,9 @@
     "mutation_rate": 0.3,
     "crossover_operator": "uniform",
     "crossover_rate": 0.85,
-    "population_number": 8,
-    "processes_number": 8,
+    "population_number": 4,
+    "processes_number": 4,
     "mutation_type": "gaussian",
-    "max_iterations": 10
+    "max_iterations": 5
   }
 }

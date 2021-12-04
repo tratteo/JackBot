@@ -1,6 +1,9 @@
 import importlib
 import json
+import os
 import sys
+from os import listdir
+from os.path import isfile, join
 
 import config
 from core import lib
@@ -26,6 +29,7 @@ command_manager = CommandHandler.create() \
     .keyed("-o", "Output file .res") \
     .keyed("-r", "Epoch report") \
     .keyed("-ib", "Initial balance") \
+    .keyed("-v", "Validation set file") \
     .on_help(helper) \
     .on_fail(failure) \
     .build(sys.argv)
@@ -54,17 +58,20 @@ if report_path is not None:
 # Instantiate the strategy
 strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)
 genome = [Gene(t["name"], t["lower_bound"], t["upper_bound"], lib.try_get_json_attr("_value", t)) for t in data["parameters"]]
-
 # Train parallel
 if __name__ == "__main__":
-    genetic_trainer.train_strategy(strategy_class, genome, dataset, result_path,
-                                   crossover_operator = lib.try_get_json_attr("crossover_operator", hyperparameters),
-                                   crossover_rate = lib.try_get_json_attr("crossover_rate", hyperparameters),
-                                   mutation_type = lib.try_get_json_attr("mutation_type", hyperparameters),
-                                   mutation_rate = lib.try_get_json_attr("mutation_rate", hyperparameters),
-                                   population_number = lib.try_get_json_attr("population_number", hyperparameters),
-                                   processes_number = lib.try_get_json_attr("processes_number", hyperparameters),
-                                   max_iterations = lib.try_get_json_attr("max_iterations", hyperparameters),
-                                   initial_balance = initial_balance,
-                                   timeframe = timeframe,
-                                   report_path = report_path)
+    try:
+        genetic_trainer.train_strategy(strategy_class, genome, dataset, result_path,
+                                       crossover_operator = lib.try_get_json_attr("crossover_operator", hyperparameters),
+                                       crossover_rate = lib.try_get_json_attr("crossover_rate", hyperparameters),
+                                       mutation_type = lib.try_get_json_attr("mutation_type", hyperparameters),
+                                       mutation_rate = lib.try_get_json_attr("mutation_rate", hyperparameters),
+                                       population_number = lib.try_get_json_attr("population_number", hyperparameters),
+                                       processes_number = lib.try_get_json_attr("processes_number", hyperparameters),
+                                       max_iterations = lib.try_get_json_attr("max_iterations", hyperparameters),
+                                       validation_set_path = command_manager.get_k("-v"),
+                                       initial_balance = initial_balance,
+                                       timeframe = timeframe,
+                                       report_path = report_path)
+    except(KeyboardInterrupt, SystemExit):
+        exit(0)

@@ -5,6 +5,8 @@ import multiprocessing
 import random
 import time
 from itertools import repeat
+from os import listdir
+from os.path import join, isfile
 
 from numpy import genfromtxt
 
@@ -93,20 +95,31 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     population_number = kwargs.get("population_number") if kwargs.get("population_number") is not None else 6
     processes_number = kwargs.get("processes_number") if kwargs.get("processes_number") is not None else population_number if population_number <= config.MAX_PROCESSES_NUMBER else config.MAX_PROCESSES_NUMBER
     mutation_type = kwargs.get("mutation_type") if kwargs.get("mutation_type") is not None else "uniform"
-    max_iterations = kwargs.get("max_iterations") if kwargs.get("max_iterations") is not None else float("inf")
+    max_iterations = kwargs.get("max_iterations") if kwargs.get("max_iterations") is not None else 10
     timeframe = kwargs.get("timeframe") if kwargs.get("timeframe") is not None else 5
     initial_balance = kwargs.get("initial_balance") if kwargs.get("initial_balance") is not None else 10000
     report_path = kwargs.get("report_path")
+    validation_set_path = kwargs.get("validation_set_path") if kwargs.get("validation_set_path") is not None else None
 
     population = []
     champion = None
     epoch = 0
+    validation_data = None
+    validation_interval = max_iterations
+    validation_progress_bar = None
+
+    if validation_set_path is not None:
+        print("Loading validation set " + validation_set_path + "...")
+        validation_data = genfromtxt(validation_set_path, delimiter = config.DEFAULT_DELIMITER)
+        if validation_data is None: return
+        validation_progress_bar = ProgressBar.create(len(validation_data)).width(30).no_percentage().build()
     print("Loading " + data_path + "...")
     data = genfromtxt(data_path, delimiter = config.DEFAULT_DELIMITER)
-    progress_bar = ProgressBar.create(len(data)).width(30).no_percentage().build()
+    if data is None: return
     workers_pool = multiprocessing.Pool(processes_number)
+    progress_bar = ProgressBar.create(len(data)).width(30).no_percentage().build()
 
-    print("Starting " + str(population_number) + " parallel simulations on " + str(data_path) + " | " + lib.get_flag_from_minutes(timeframe))
+    print("\nStarting " + str(population_number) + " parallel simulations on " + str(data_path) + " | " + lib.get_flag_from_minutes(timeframe) + "\n")
 
     # Instantiate random ancestors
     for i in range(population_number):
@@ -114,35 +127,28 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
 
     __mutation(population, mutation_type, mutation_rate)
 
-    while epoch < max_iterations:
-        epoch += 1
+    while epoch < float("inf"):
         avg_fitness = 0
         # Process data and run simulations
-        progress_bar.reset()
         start = time.time()
-        try:
-            test_results_async = workers_pool.starmap_async(
-                dataset_evaluator.evaluate,
-                zip([i.build_strategy(initial_balance) for i in population],
-                    repeat(initial_balance),
-                    repeat(data),
-                    repeat(progress_bar.step),
-                    repeat(1440),
-                    repeat(timeframe),
-                    range(population_number)))
+        print("Epoch " + str(epoch + 1))
+        progress_bar.reset()
+        test_results_async = workers_pool.starmap_async(
+            dataset_evaluator.evaluate,
+            zip([i.build_strategy(initial_balance) for i in population],
+                repeat(initial_balance),
+                repeat(data),
+                repeat(progress_bar.step),
+                repeat(1440),
+                repeat(timeframe),
+                range(population_number)))
 
-            test_results = test_results_async.get(timeout = 1000)
-            if test_results is None:
-                break
-
-        except KeyboardInterrupt:
-            workers_pool.terminate()
-            workers_pool.join()
-            break
+        test_results = test_results_async.get(timeout = 1000)
+        if test_results is None: break
 
         end = time.time()
         progress_bar.dispose()
-        print("Epoch " + str(epoch) + " completed in " + "{:.3f}".format(end - start) + "s", flush = True)
+        print("Epoch " + str(epoch + 1) + " completed in " + "{:.3f}".format(end - start) + "s", flush = True)
 
         # Compute fitness and results
         for result, balance, index in test_results:
@@ -172,11 +178,20 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
         print("Max fitness: " + str(epoch_champion.fitness), flush = True)
         print("Champion fitness: " + str(champion.fitness), flush = True)
         print("\n", flush = True)
-        if epoch < max_iterations:
-            # Crossover
-            population = __crossover(population, crossover_rate, crossover_operator)
-            # Mutation
-            __mutation(population, mutation_type, mutation_rate)
+        # Crossover
+        population = __crossover(population, crossover_rate, crossover_operator)
+        # Mutation
+        __mutation(population, mutation_type, mutation_rate)
+        epoch += 1
+        validation_interval -= 1
+        if champion is not None and validation_set_path is not None and validation_interval == 0:
+            print("Running champion on validation set")
+            validation_progress_bar.reset()
+            result, balance, index = dataset_evaluator.evaluate(champion.build_strategy(initial_balance), initial_balance, validation_data, validation_progress_bar.step, 1440, timeframe, 0)
+            if result is None: break
+            validation_progress_bar.dispose()
+            validation_interval = max_iterations
+            print(str(result) + "\n")
 
     workers_pool.terminate()
     workers_pool.join()
