@@ -11,7 +11,7 @@ import config
 
 class RSI:
 
-    def __init__(self, period = 14):
+    def __init__(self, period: int = 14):
         self.period = period
         self.first_closes = deque(maxlen = period + 1)
         self.counter = 0
@@ -19,21 +19,21 @@ class RSI:
         self.gain = 0
         self.loss = 0
 
-    def avg_gain_loss(self, closes):
+    def __avg_gain_loss(self, closes):
         gain = []
         loss = []
         prev = closes[0]
         if len(closes) == 1:
             return [0, 0]
 
-        for c in collections.deque(itertools.islice(closes, 1, len(closes))):
-            if prev <= c:
-                gain.append(c - prev)
+        for current in collections.deque(itertools.islice(closes, 1, len(closes))):
+            if prev <= current:
+                gain.append(current - prev)
                 loss.append(0)
-            elif prev > c:
+            elif prev > current:
                 gain.append(0)
-                loss.append(prev - c)
-            prev = c
+                loss.append(prev - current)
+            prev = current
 
         return [np.mean(gain), np.mean(loss)]
 
@@ -41,7 +41,7 @@ class RSI:
         if self.counter <= self.period:
             self.counter += 1
             self.first_closes.append(value)
-            self.gain, self.loss = self.avg_gain_loss(self.first_closes)
+            self.gain, self.loss = self.__avg_gain_loss(self.first_closes)
         else:
             if self.prev <= value:
                 self.gain = (self.gain * (self.period - 1) + (value - self.prev)) / self.period

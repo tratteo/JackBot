@@ -60,20 +60,20 @@ class Position:
             if current_price >= self.take_profit:
                 # win long trade
                 return True, True
-                pass
+                
             elif current_price <= self.stop_loss:
                 # lose long trade
                 return True, False
-                pass
+
         elif self.pos_type == PositionType.SHORT:
             if current_price <= self.take_profit:
                 # win short trade
                 return True, True
-                pass
+
             elif current_price >= self.stop_loss:
                 # lose short trade
                 return True, False
-                pass
+
         return False, False
 
     def open(self, wallet_handler):

@@ -94,9 +94,6 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
     low = data[epoch, LOW]
     start_time = 0
     time_span = len(data)
-    highs = []
-    lows = []
-    closes = []
     balance_trend = []
     if not isinstance(strategy.wallet_handler, TestWallet):
         print("Unable to test the strategy, the wallet handler is not an instance of a TestWallet")
@@ -125,9 +122,6 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
                 frame_message["k"]["l"] = str(low)
                 frame_message["k"]["t"] = start_time
                 frame_message["k"]["T"] = data[epoch, CLOSE_T]
-                highs.append(float(high))
-                lows.append(float(low))
-                closes.append(float(data[epoch, CLOSE]))
 
                 # Set defaults to next candle
                 high = data[epoch + 1, 2]

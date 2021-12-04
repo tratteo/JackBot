@@ -1,6 +1,6 @@
 {
     "strategy": "AtrSrsi3EmaStrategy",
-    "timeframe": "30m",
+    "timeframe": "10m",
     "parameters": [
         {
             "name": "risk_reward_ratio",
