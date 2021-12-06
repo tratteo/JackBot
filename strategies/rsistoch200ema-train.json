@@ -40,6 +40,6 @@
     "population_number": 8,
     "processes_number": 8,
     "mutation_type": "gaussian",
-    "max_iterations": 100
+    "validation_interval": 100
   }
 }

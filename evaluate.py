@@ -74,12 +74,13 @@ if out is not None:
 
 # Plot data
 if plot_arg is not None:
-    balance_ema = talib.MA(np.array(balance), timeperiod = 25)
+    balance = strategy.wallet_handler.balance_trend
+    balance_ema = talib.MA(np.array(balance), timeperiod = 20)
     balance_min, balance_max = min(balance), max(balance)
     balance_len = len(balance)
     plot.figure(num = strategy_name)
     plot.plot(balance, label = "Balance")
-    plot.plot(balance_ema, label = "EMA")
+    plot.plot(balance_ema, label = "MA")
     plot.title(strategy_name + " on " + dataset)
     plot.ylabel("Balance")
     plot.xlabel(plot_arg)

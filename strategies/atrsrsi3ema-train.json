@@ -34,6 +34,6 @@
     "population_number": 4,
     "processes_number": 4,
     "mutation_type": "gaussian",
-    "max_iterations": 5
+    "validation_interval": 5
   }
 }

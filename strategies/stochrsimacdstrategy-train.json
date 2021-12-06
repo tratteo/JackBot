@@ -46,6 +46,6 @@
     "population_number": 2,
     "processes_number": 2,
     "mutation_type": "uniform",
-    "max_iterations": 200
+    "validation_interval": 200
   }
 }

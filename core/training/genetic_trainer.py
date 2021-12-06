@@ -5,8 +5,6 @@ import multiprocessing
 import random
 import time
 from itertools import repeat
-from os import listdir
-from os.path import join, isfile
 
 from numpy import genfromtxt
 
@@ -95,7 +93,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     population_number = kwargs.get("population_number") if kwargs.get("population_number") is not None else 6
     processes_number = kwargs.get("processes_number") if kwargs.get("processes_number") is not None else population_number if population_number <= config.MAX_PROCESSES_NUMBER else config.MAX_PROCESSES_NUMBER
     mutation_type = kwargs.get("mutation_type") if kwargs.get("mutation_type") is not None else "uniform"
-    max_iterations = kwargs.get("max_iterations") if kwargs.get("max_iterations") is not None else 10
+    validation_interval = kwargs.get("validation_interval") if kwargs.get("validation_interval") is not None else 10
     timeframe = kwargs.get("timeframe") if kwargs.get("timeframe") is not None else 5
     initial_balance = kwargs.get("initial_balance") if kwargs.get("initial_balance") is not None else 10000
     report_path = kwargs.get("report_path")
@@ -105,7 +103,6 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     champion = None
     epoch = 0
     validation_data = None
-    validation_interval = max_iterations
     validation_progress_bar = None
 
     if validation_set_path is not None:
@@ -190,7 +187,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
             result, balance, index = dataset_evaluator.evaluate(champion.build_strategy(initial_balance), initial_balance, validation_data, validation_progress_bar.step, 1440, timeframe, 0)
             if result is None: break
             validation_progress_bar.dispose()
-            validation_interval = max_iterations
+            validation_interval = validation_interval
             print(str(result) + "\n")
 
     workers_pool.terminate()

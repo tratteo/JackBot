@@ -16,6 +16,7 @@ class Strategy(ABC):
         self.__short_conditions = self.get_short_conditions()
         self.__longest_period = 500
         self.wallet_handler = wallet_handler
+        self.balance_trend = []
 
     @abstractmethod
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
@@ -53,9 +54,9 @@ class Strategy(ABC):
         for c in conditions:
             c.reset()
 
-    def update_state(self, frame, verbose: bool = False):
-        candle = frame["k"]
-        close_price = float(candle["c"])
+    def update_state(self, message, verbose: bool = False):
+        frame = message["k"]
+        close_price = float(frame["c"])
 
         to_remove = []
         for pos in self.open_positions:
@@ -64,6 +65,7 @@ class Strategy(ABC):
                 pos.close(won, close_price, self.wallet_handler)
                 if isinstance(self.wallet_handler, TestWallet):
                     self.wallet_handler.balance += pos.profit + pos.investment
+                    self.wallet_handler.balance_trend.append(self.wallet_handler.balance_trend[-1] + pos.profit)
                 to_remove.append(pos)
                 self.closed_positions.append(pos)
                 if verbose: print("Closed position: " + str(pos))
@@ -72,20 +74,20 @@ class Strategy(ABC):
         for rem in to_remove:
             self.open_positions.remove(rem)
 
-        if candle["x"]:
+        if frame["x"]:
 
-            self.compute_indicators_step(candle)
+            self.compute_indicators_step(frame)
             # Tick all conditions so they can update their internal state
             for c in self.__long_conditions:
-                c.tick(candle)
+                c.tick(frame)
 
             for c in self.__short_conditions:
-                c.tick(candle)
+                c.tick(frame)
 
             if len(self.open_positions) < self.max_positions and self.wallet_handler.get_balance() > 0:
                 if self.__check_conditions(self.__long_conditions):
                     investment = self.get_margin_investment()
-                    pos = Position(PositionType.LONG, candle["t"], close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG), investment)
+                    pos = Position(PositionType.LONG, frame["t"], close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG), investment)
                     if isinstance(self.wallet_handler, TestWallet):
                         self.wallet_handler.balance -= investment
                     pos.open(self.wallet_handler)
@@ -95,7 +97,7 @@ class Strategy(ABC):
 
                 if self.__check_conditions(self.__short_conditions):
                     investment = self.get_margin_investment()
-                    pos = Position(PositionType.SHORT, candle["t"], close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT), investment)
+                    pos = Position(PositionType.SHORT, frame["t"], close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT), investment)
                     if isinstance(self.wallet_handler, TestWallet):
                         self.wallet_handler.balance -= investment
                     pos.open(self.wallet_handler)

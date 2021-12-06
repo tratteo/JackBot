@@ -1,4 +1,8 @@
 {
-  "ExpandedNodes": [],
+  "ExpandedNodes": [
+    "",
+    "\\strategies"
+  ],
+  "SelectedNode": "\\train.py",
   "PreviewInSolutionExplorer": false
 }

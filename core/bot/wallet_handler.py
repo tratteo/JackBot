@@ -17,6 +17,7 @@ class KucoinWallet(WalletHandler):
         return KucoinWallet(options, api_key, api_secret, api_url)
 
     def __init__(self, options, api_key: str, api_secret: str, api_url: str):
+        super().__init__()
         self.options = options
         self.client = Client(api_key, api_secret)
         self.client.API_URL = api_url
@@ -32,6 +33,7 @@ class BinanceWallet(WalletHandler):
         return BinanceWallet(options, api_key, api_secret, api_url)
 
     def __init__(self, options, api_key: str, api_secret: str, api_url: str):
+        super().__init__()
         self.options = options
         self.client = Client(api_key, api_secret)
         self.client.API_URL = api_url
@@ -50,7 +52,9 @@ class TestWallet(WalletHandler):
         return TestWallet(initial_balance)
 
     def __init__(self, initial_balance: float):
+        super().__init__()
         self.__balance = initial_balance
+        self.balance_trend = [initial_balance]
 
     @property
     def balance(self):
