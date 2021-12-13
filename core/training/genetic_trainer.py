@@ -104,11 +104,10 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     epoch = 0
     validation_data = None
     validation_progress_bar = None
-
+    current_validation = validation_interval
     if validation_set_path is not None:
         print("Loading validation set " + validation_set_path + "...")
         validation_data = genfromtxt(validation_set_path, delimiter = config.DEFAULT_DELIMITER)
-        if validation_data is None: return
         validation_progress_bar = ProgressBar.create(len(validation_data)).width(30).no_percentage().build()
     print("Loading " + data_path + "...")
     data = genfromtxt(data_path, delimiter = config.DEFAULT_DELIMITER)
@@ -116,7 +115,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     workers_pool = multiprocessing.Pool(processes_number)
     progress_bar = ProgressBar.create(len(data)).width(30).no_percentage().build()
 
-    print("\nStarting " + str(population_number) + " parallel simulations on " + str(data_path) + " | " + lib.get_flag_from_minutes(timeframe) + "\n")
+    print("\nStarting " + str(processes_number) + " parallel simulations on " + str(data_path) + " | " + lib.get_flag_from_minutes(timeframe) + "\n")
 
     # Instantiate random ancestors
     for i in range(population_number):
@@ -180,14 +179,14 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
         # Mutation
         __mutation(population, mutation_type, mutation_rate)
         epoch += 1
-        validation_interval -= 1
-        if champion is not None and validation_set_path is not None and validation_interval == 0:
+        current_validation -= 1
+        if champion is not None and validation_set_path is not None and current_validation == 0:
             print("Running champion on validation set")
             validation_progress_bar.reset()
             result, balance, index = dataset_evaluator.evaluate(champion.build_strategy(initial_balance), initial_balance, validation_data, validation_progress_bar.step, 1440, timeframe, 0)
             if result is None: break
             validation_progress_bar.dispose()
-            validation_interval = validation_interval
+            current_validation = validation_interval
             print(str(result) + "\n")
 
     workers_pool.terminate()
