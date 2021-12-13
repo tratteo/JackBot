@@ -1,5 +1,5 @@
 # JackBot
-Jack, but is a crypto trader bot
+Jack, but he is a crypto trader bot
 
 ## Features
 1. Modular system to implement custom strategies with technical indicators
