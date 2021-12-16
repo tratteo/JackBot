@@ -99,8 +99,8 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
         print("Unable to test the strategy, the wallet handler is not an instance of a TestWallet")
         return None, balance_trend, index
 
-    # Report progress each week
-    progress_reporter_span = 1440 * 7
+    # Report progress each month
+    progress_reporter_span = 1440 * 30
     try:
         while epoch < time_span:
             if epoch + 1 >= len(data): break

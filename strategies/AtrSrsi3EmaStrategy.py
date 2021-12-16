@@ -18,7 +18,7 @@ class AtrSrsi3EmaStrategy(Strategy):
         interval_tolerance
     """
 
-    MAX_OPEN_POSITIONS_NUMBER = 3
+    MAX_OPEN_POSITIONS_NUMBER = 2
 
     def __init__(self, wallet_handler: WalletHandler, **strategy_params):
         self.risk_reward_ratio = strategy_params["risk_reward_ratio"]

@@ -27,6 +27,7 @@ command_manager = CommandHandler.create() \
     .keyed("-r", "Epoch report") \
     .keyed("-ib", "Initial balance") \
     .keyed("-v", "Validation set file") \
+    .keyed("-vr", "Validation report file") \
     .on_help(helper) \
     .on_fail(failure) \
     .build(sys.argv)
@@ -65,8 +66,9 @@ if __name__ == "__main__":
                                        mutation_rate = lib.try_get_json_attr("mutation_rate", hyperparameters),
                                        population_number = lib.try_get_json_attr("population_number", hyperparameters),
                                        processes_number = lib.try_get_json_attr("processes_number", hyperparameters),
-                                       max_iterations = lib.try_get_json_attr("validation_interval", hyperparameters),
+                                       validation_interval = lib.try_get_json_attr("validation_interval", hyperparameters),
                                        validation_set_path = command_manager.get_k("-v"),
+                                       validation_report_path = command_manager.get_k("-vr"),
                                        initial_balance = initial_balance,
                                        timeframe = timeframe,
                                        report_path = report_path)

@@ -1,39 +1,39 @@
 {
   "strategy": "AtrSrsi3EmaStrategy",
-  "timeframe": "15m",
+  "timeframe": "10m",
   "parameters": [
     {
       "name": "risk_reward_ratio",
       "lower_bound": 0.5,
       "upper_bound": 5,
-      "_value": 0.5
+      "_value": 1.1009872622694283
     },
     {
       "name": "atr_factor",
       "lower_bound": 1,
-      "upper_bound": 6,
-      "_value": 6
+      "upper_bound": 7,
+      "_value": 4.18
     },
     {
       "name": "investment_ratio",
       "lower_bound": 0.01,
-      "upper_bound": 0.15,
-      "_value": 0.075
+      "upper_bound": 0.2,
+      "_value": 0.15
     },
     {
       "name": "interval_tolerance",
       "lower_bound": 1,
       "upper_bound": 10,
-      "_value": 6.300145800793021
+      "_value": 7.808708632436882
     }
   ],
   "hyperparameters": {
-    "mutation_rate": 0.3,
+    "mutation_rate": 0.25,
     "crossover_operator": "uniform",
-    "crossover_rate": 0.85,
-    "population_number": 32,
+    "crossover_rate": 0.75,
+    "population_number": 16,
     "processes_number": 16,
     "mutation_type": "gaussian",
-    "validation_interval": 10
+    "validation_interval": 5
   }
 }

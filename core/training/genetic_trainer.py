@@ -80,7 +80,7 @@ class _Individual:
             # if val < 0: val *= 1.15
             positions_percentage += val
         balance_ratio = test_result.final_balance / test_result.initial_balance
-        self.fitness = math.exp(balance_ratio * positions_percentage * math.pow(test_result.win_ratio + 1, 1.75) / (test_result.minutes / test_result.time_frame_minutes))
+        self.fitness = math.exp(balance_ratio * positions_percentage * math.pow(test_result.win_ratio + 1, 2.5) / (test_result.minutes / test_result.time_frame_minutes))
         if self.fitness < 0: self.fitness = 0
         return self.fitness
 
@@ -98,6 +98,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     initial_balance = kwargs.get("initial_balance") if kwargs.get("initial_balance") is not None else 10000
     report_path = kwargs.get("report_path")
     validation_set_path = kwargs.get("validation_set_path") if kwargs.get("validation_set_path") is not None else None
+    validation_report_path = kwargs.get("validation_report_path") if kwargs.get("validation_report_path") is not None else None
 
     population = []
     champion = None
@@ -113,7 +114,7 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
     data = genfromtxt(data_path, delimiter = config.DEFAULT_DELIMITER)
     if data is None: return
     workers_pool = multiprocessing.Pool(processes_number)
-    progress_bar = ProgressBar.create(len(data)).width(30).no_percentage().build()
+    progress_bar = ProgressBar.create(len(data)).width(50).no_percentage().build()
 
     print("\nStarting " + str(processes_number) + " parallel simulations on " + str(data_path) + " | " + lib.get_flag_from_minutes(timeframe) + "\n")
 
@@ -185,6 +186,15 @@ def train_strategy(strategy_class: type, ancestor_genome: list[Gene], data_path:
             validation_progress_bar.reset()
             result, balance, index = dataset_evaluator.evaluate(champion.build_strategy(initial_balance), initial_balance, validation_data, validation_progress_bar.step, 1440, timeframe, 0)
             if result is None: break
+            if validation_report_path is not None:
+                with open(validation_report_path, "a") as outfile:
+                    outfile.write("Validation " + str(epoch)+"\n")
+                    outfile.write(str(champion))
+                    outfile.write("\n\n" + "-" * 75 + "\n")
+                    outfile.write("\nTest on validation set:\n")
+                    outfile.write(str(result))
+                    outfile.write("\n\n" + "#" * 100 + "\n\n")
+
             validation_progress_bar.dispose()
             current_validation = validation_interval
             print(str(result) + "\n")
