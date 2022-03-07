@@ -3,6 +3,10 @@
 API_KEY = "vTh6WDXyy9sojFQPT7Q615JX31oEEMGrLAexaadpS4V4vlhVDqqvF3mBwMXmVS8V"
 API_SECRET = "nuC2xLmP1tWM8gJg59R5eAi0yJDQjnVST7hH0sSaKrKe4l81UF15pRc3y2UYHA1A"
 
+K_API_KEY  = ""
+K_API_SECRET = ""
+
+
 # endregion
 
 # region Preferences
