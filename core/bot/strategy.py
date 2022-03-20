@@ -8,6 +8,8 @@ from core.bot.wallet_handler import WalletHandler, TestWallet
 
 class Strategy(ABC):
 
+    #condizioni in base alle quali entriamo o usciamo da una posizione
+
     def __init__(self, wallet_handler: WalletHandler, max_positions: int):
         self.max_positions = max_positions
         self.open_positions = []
@@ -93,7 +95,7 @@ class Strategy(ABC):
                     pos.open(self.wallet_handler)
                     self.open_positions.append(pos)
                     if verbose: print("\nOpened position: " + str(pos))
-                    self.__reset_conditions(self.__long_conditions)
+                    self.__reset_conditions(self.__long_conditions)   # resetta le condizioni, in caso che siano perpetue
 
                 if self.__check_conditions(self.__short_conditions):
                     investment = self.get_margin_investment()
