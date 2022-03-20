@@ -1,6 +1,7 @@
 import importlib
 import json
 import os
+import sys
 
 from binance import ThreadedWebsocketManager
 
@@ -43,7 +44,9 @@ with open(cmd.get_p(1)) as file:
 strategy_name = data["strategy"]
 strategy_class = getattr(importlib.import_module("strategies." + strategy_name), strategy_name)
 wallet = BinanceWallet.factory(options, config.API_KEY, config.API_SECRET)
-strategy = strategy_class(wallet, *data["parameters"])
+
+strategy = strategy_class(wallet, **dict([(p["name"], p["_value"]) for p in data["parameters"]]))
+
 
 twm = ThreadedWebsocketManager(api_key = config.API_KEY, api_secret = config.API_SECRET)
 twm.start()
@@ -53,8 +56,9 @@ while True:
     inp = input()
     clear()
     if inp == "balance":
-        print(options["first"], (wallet.get_asset_balance()))
-        print(options["second"], wallet.get_second_balance())
+
+        print(options["first"], wallet.get_balance())
+        print(options["second"], wallet.get_balance())
 
     # Error can be ignored
     elif inp == "q":

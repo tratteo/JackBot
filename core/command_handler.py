@@ -120,12 +120,13 @@ class CommandHandlerBuilder:
         self.command_handler.help_delegate = help_delegate
         return self
 
-    def build(self, args: list[str]) -> CommandHandler:
+    def build(self, args: list[str]) :
         """function to manage system string argument
 
         Parameters:
             args: System string argument
         """
+
         args = args.copy()
         args.pop(0)
         if len(args) <= 0 or args[0] == "help" and self.command_handler.help_delegate is not None:
