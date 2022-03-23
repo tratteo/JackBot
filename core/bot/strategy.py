@@ -2,6 +2,7 @@ from abc import abstractmethod, ABC
 from typing import List
 
 from core.bot.condition import StrategyCondition
+from core.bot.middle_ware import DataFrame
 from core.bot.position import PositionType, Position
 from core.bot.wallet_handler import WalletHandler, TestWallet
 
@@ -23,7 +24,7 @@ class Strategy(ABC):
         pass
 
     @abstractmethod
-    def compute_indicators_step(self, frame):
+    def compute_indicators_step(self, message:DataFrame):
         pass
 
     @abstractmethod
@@ -54,35 +55,35 @@ class Strategy(ABC):
         for c in conditions:
             c.reset()
 
-    def update_state(self, message, verbose: bool = False):
+    def update_state(self, message:DataFrame, verbose: bool = False):
         frame = message["k"]
-        close_price = float(frame["c"])
+        close_price = float(message.close_price)
+        #
+        # to_remove = []
+        # for pos in self.open_positions:
+        #     should_close, won = pos.should_close(close_price)
+        #     if should_close:
+        #         pos.close(won, close_price, self.wallet_handler)
+        #         if isinstance(self.wallet_handler, TestWallet):
+        #             self.wallet_handler.balance += pos.profit + pos.investment
+        #             self.wallet_handler.balance_trend.append(self.wallet_handler.balance_trend[-1] + pos.profit)
+        #         to_remove.append(pos)
+        #         self.closed_positions.append(pos)
+        #         if verbose: print("Closed position: " + str(pos))
+        #
+        # # Remove all the closed positions
+        # for rem in to_remove:
+        #     self.open_positions.remove(rem)
 
-        to_remove = []
-        for pos in self.open_positions:
-            should_close, won = pos.should_close(close_price)
-            if should_close:
-                pos.close(won, close_price, self.wallet_handler)
-                if isinstance(self.wallet_handler, TestWallet):
-                    self.wallet_handler.balance += pos.profit + pos.investment
-                    self.wallet_handler.balance_trend.append(self.wallet_handler.balance_trend[-1] + pos.profit)
-                to_remove.append(pos)
-                self.closed_positions.append(pos)
-                if verbose: print("Closed position: " + str(pos))
+        if message.is_closed:
 
-        # Remove all the closed positions
-        for rem in to_remove:
-            self.open_positions.remove(rem)
-
-        if frame["x"]:
-
-            self.compute_indicators_step(frame)
+            self.compute_indicators_step(message)
             # Tick all conditions so they can update their internal state
             for c in self.__long_conditions:
-                c.tick(frame)
+                c.tick(message)
 
             for c in self.__short_conditions:
-                c.tick(frame)
+                c.tick(message)
 
             if len(self.open_positions) < self.max_positions and self.wallet_handler.get_balance() > 0:
                 if self.__check_conditions(self.__long_conditions):
