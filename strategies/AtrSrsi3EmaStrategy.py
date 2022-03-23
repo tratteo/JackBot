@@ -21,6 +21,7 @@ class AtrSrsi3EmaStrategy(Strategy):
     MAX_OPEN_POSITIONS_NUMBER = 2
 
     def __init__(self, wallet_handler: WalletHandler, **strategy_params):
+
         self.risk_reward_ratio = strategy_params["risk_reward_ratio"]
         self.atr_factor = strategy_params["atr_factor"]
         self.investment_rate = strategy_params["investment_ratio"]

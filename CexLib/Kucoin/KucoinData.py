@@ -1,7 +1,5 @@
-import datetime
 
 from CexLib.Kucoin.KucoinRequest import KucoinFuturesBaseRestApi
-import os
 
 
 class KucoinData(KucoinFuturesBaseRestApi):

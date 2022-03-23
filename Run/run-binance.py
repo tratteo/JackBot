@@ -42,8 +42,10 @@ with open(cmd.get_p(1)) as file:
 
 strategy_name = data["strategy"]
 strategy_class = getattr(importlib.import_module("strategies." + strategy_name), strategy_name)
-wallet = BinanceWallet.factory(env, config.API_KEY, config.API_SECRET)  # walletHandlerFactory
-strategy = strategy_class(wallet, *data["parameters"])
+wallet = BinanceWallet.factory(options, config.API_KEY, config.API_SECRET)
+
+strategy = strategy_class(wallet, **dict([(p["name"], p["_value"]) for p in data["parameters"]]))
+
 
 # twm = ThreadedWebsocketManager(api_key = config.API_KEY, api_secret = config.API_SECRET)
 # twm.start()
@@ -54,9 +56,11 @@ middleware = MiddleWare.factory(strategy.update_state, env)
 while True:
     inp = input()
     clear()
-    # if inp == "balance":
-    #     print(options["first"], (wallet.get_asset_balance()))         #da cambiare
-    #     print(options["second"], wallet.get_second_balance())
+
+    if inp == "balance":
+
+        print(options["first"], wallet.get_balance())
+        print(options["second"], wallet.get_balance())
 
     # Error can be ignored
     # elif inp == "q":
