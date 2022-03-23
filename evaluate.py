@@ -3,7 +3,6 @@ import json
 import sys
 
 import matplotlib.pyplot as plot
-import talib
 from numpy import genfromtxt
 
 import config

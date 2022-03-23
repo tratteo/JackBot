@@ -32,10 +32,10 @@ def failure(helper_str: str):
 def clear():
     os.system("cls")
 
+cmd = CommandHandler.create().positional("options").positional("strategy").on_fail(failure).on_help(helper).build(sys.argv)
 
-cmd = CommandHandler.create().positional("env").positional("strategy").on_fail(failure).on_help(helper).build(sys.argv)
-
-env = cmd.get_p(0)
+with open(cmd.get_p(0)) as file:
+    options = json.load(file)
 
 with open(cmd.get_p(1)) as file:
     data = json.load(file)
@@ -70,3 +70,9 @@ while True:
 
     else:
         print("invalid input")
+
+
+# TODO:
+# create run kucoin
+# adapt dataset_evaluation to new frame format
+# how to open position on multiple tocken ? 

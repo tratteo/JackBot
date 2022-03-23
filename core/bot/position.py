@@ -54,25 +54,28 @@ class Position(ABC):
         self.ord_type = ord_type
 
     def should_close(self, current_price: float) -> [bool, bool]:
+
+        """Return if should close, win/loss"""
+
         if self.pos_type == PositionType.LONG:
             if current_price >= self.take_profit:
-                # win long trade
-                return True, True
+                self.closed = True
+                self.won = True
 
             elif current_price <= self.stop_loss:
-                # lose long trade
-                return True, False
+                self.closed = True
+                self.won = False
 
         elif self.pos_type == PositionType.SHORT:
             if current_price <= self.take_profit:
-                # win short trade
-                return True, True
+                self.closed = True
+                self.won = True
 
             elif current_price >= self.stop_loss:
-                # lose short trade
-                return True, False
+                self.closed = True
+                self.won = False
 
-        return False, False
+        return self.closed
 
     def __str__(self):
         if self.closed:
