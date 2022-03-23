@@ -24,6 +24,7 @@ wheels/
 .installed.cfg
 *.egg
 data/
+analysisRes/
 genetic_data/
 MANIFEST
 

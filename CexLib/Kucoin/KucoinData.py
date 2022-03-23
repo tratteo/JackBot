@@ -1,7 +1,7 @@
 from CexLib.Kucoin.KucoinRequest import KucoinFuturesBaseRestApi
 import os
 
-class Data(KucoinFuturesBaseRestApi):
+class KucoinData(KucoinFuturesBaseRestApi):
 
     def __init__(self, key, secret, passphrase, is_sandbox=False, url='', is_v1api=False):
         super().__init__(key, secret, passphrase, is_sandbox, url, is_v1api)
@@ -45,7 +45,7 @@ class Data(KucoinFuturesBaseRestApi):
 
 if __name__ == "__main__":
 
-    data = Data(os.environ.get('FKUCOIN_KEY'), os.environ.get('FKUCOIN_SECRET'), os.environ.get('FKUCOIN_PASS'))
+    data = KucoinData(os.environ.get('FKUCOIN_KEY'), os.environ.get('FKUCOIN_SECRET'), os.environ.get('FKUCOIN_PASS'))
     # for x in sorted(data.get_all_symbols()):
     #     print(x)
 
