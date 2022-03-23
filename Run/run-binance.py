@@ -3,9 +3,10 @@ import json
 import os
 import sys
 
-from binance import ThreadedWebsocketManager
+# from binance import ThreadedWebsocketManager
 
 import config
+from core.bot.middle_ware import MiddleWare
 from core.command_handler import CommandHandler
 from core.bot.wallet_handler import BinanceWallet
 
@@ -18,13 +19,13 @@ def update(msg):
 
 
 def helper(helper_str: str):
-    print(helper_str, flush = True)
+    print(helper_str, flush=True)
     exit(0)
 
 
 def failure(helper_str: str):
-    print("Wrong syntax \n", flush = True)
-    print(helper_str, flush = True)
+    print("Wrong syntax \n", flush=True)
+    print(helper_str, flush=True)
     exit(1)
 
 
@@ -46,21 +47,25 @@ wallet = BinanceWallet.factory(options, config.API_KEY, config.API_SECRET)
 strategy = strategy_class(wallet, **dict([(p["name"], p["_value"]) for p in data["parameters"]]))
 
 
-twm = ThreadedWebsocketManager(api_key = config.API_KEY, api_secret = config.API_SECRET)
-twm.start()
-twm.start_kline_socket(callback = update, symbol = options["first"] + options["second"])
+# twm = ThreadedWebsocketManager(api_key = config.API_KEY, api_secret = config.API_SECRET)
+# twm.start()
+# twm.start_kline_socket(callback = update, symbol = options["first"] + options["second"])
+
+middleware = MiddleWare.factory(strategy.update_state, env)
 
 while True:
     inp = input()
     clear()
+
     if inp == "balance":
 
         print(options["first"], wallet.get_balance())
         print(options["second"], wallet.get_balance())
 
     # Error can be ignored
-    elif inp == "q":
-        twm.stop()
+    # elif inp == "q":
+    if inp == "q":
+        middleware.stop()
         exit()
 
     else:

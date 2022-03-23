@@ -1,5 +1,5 @@
+
 from CexLib.Kucoin.KucoinRequest import KucoinFuturesBaseRestApi
-import os
 
 class KucoinData(KucoinFuturesBaseRestApi):
 
@@ -40,13 +40,24 @@ class KucoinData(KucoinFuturesBaseRestApi):
             'currency': currency
         }
 
-        return self._request('GET', '/api/v1/withdrawals/quotas', params=params)
+        return self._request('GET', '/api/v1/kline/query?symbol=.KXBT&granularity=480&from=1535302400000&to=1559174400000')
+
+    def get_candles(self, symbol='XBTUSDTM', granularity='5'):
+        params = {
+            'symbol': symbol,
+            'granularity': granularity,
+        }
+        # 'from': '1647801240000',
+        # 'to': '1647797760000'
+        # return self._request('GET', '/api/v1/kline/query?symbol=XBTUSDTM&granularity=1')
+
+        # endpoint = '/api/v1/kline/query' + '?symbol=' + params['currency'] + '&granularity=' + params['granularity']
+        return self._request('GET', '/api/v1/kline/query', params=params)
 
 
 if __name__ == "__main__":
-
     data = KucoinData(os.environ.get('FKUCOIN_KEY'), os.environ.get('FKUCOIN_SECRET'), os.environ.get('FKUCOIN_PASS'))
+
     # for x in sorted(data.get_all_symbols()):
     #     print(x)
-
-    print(data.get_account_overview())
+    pass

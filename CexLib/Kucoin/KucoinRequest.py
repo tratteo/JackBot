@@ -48,7 +48,7 @@ class KucoinFuturesBaseRestApi(object):
         if method in ['GET', 'DELETE']:
             if params:
                 strl = []
-                for key in sorted(params):
+                for key in params:
                     strl.append("{}={}".format(key, params[key]))
                 data_json += '&'.join(strl)
                 uri += '?' + data_json
