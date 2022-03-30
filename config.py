@@ -13,6 +13,7 @@ KUCOIN_SECRET = "ac4f1529-71ac-4f90-b077-8eb3b762a0e4"
 KUCOIN_PASS = "jackbot"
 
 
+
 # endregion
 
 # region Preferences

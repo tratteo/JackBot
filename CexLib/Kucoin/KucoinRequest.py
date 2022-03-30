@@ -48,7 +48,9 @@ class KucoinFuturesBaseRestApi(object):
         if method in ['GET', 'DELETE']:
             if params:
                 strl = []
-                for key in sorted(params):
+
+                for key in params:
+
                     strl.append("{}={}".format(key, params[key]))
                 data_json += '&'.join(strl)
                 uri += '?' + data_json
@@ -87,9 +89,11 @@ class KucoinFuturesBaseRestApi(object):
         headers["User-Agent"] = "kucoin-futures-python-sdk/" + version
         url = urljoin(self.url, uri)
 
-        print('url ', url)
+
+        """print('url ', url)
         print('headers ', headers)
-        print('data ', data_json)
+        print('data ', data_json)"""
+
 
 
         if method in ['GET', 'DELETE']:
@@ -124,7 +128,9 @@ class KucoinFuturesBaseRestApi(object):
 
 
 if __name__ == "__main__":
-    api = KucoinFuturesBaseRestApi(os.environ.get('FKUCOIN_KEY'), os.environ.get('FKUCOIN_SECRET'), os.environ.get('FKUCOIN_PASS'))
+
+    api = KucoinFuturesBaseRestApi(os.environ.get('FK_KEY'), os.environ.get('FK_SECRET'), os.environ.get('FK_PASS'))
+
     # res = api._request('GET', '/api/v1/kline/query?symbol=.KXBT&granularity=1')
     res = api._request('GET', '/api/v1/contracts/active')
 

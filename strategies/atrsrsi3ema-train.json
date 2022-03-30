@@ -25,6 +25,12 @@
       "lower_bound": 1,
       "upper_bound": 10,
       "_value": 7.808708632436882
+    },
+    {
+      "name": "interval_tolerance",
+      "lower_bound": 1,
+      "upper_bound": 10,
+      "_value": 7.808708632436882
     }
   ],
   "hyperparameters": {

@@ -111,5 +111,5 @@ class TestWallet(WalletHandler):
 
 if __name__ == "__main__":
 
-    wallet = KucoinWallet_future(os.environ.get('FKUCOIN_KEY'), os.environ.get('FKUCOIN_SECRET'), os.environ.get('FKUCOIN_PASS'))
+    wallet = KucoinWallet_future(os.environ.get('FK_KEY'), os.environ.get('FK_SECRET'), os.environ.get('FK_PASS'))
     print(wallet.get_balance())
