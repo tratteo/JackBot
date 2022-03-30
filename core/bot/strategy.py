@@ -8,7 +8,8 @@ from CexLib.Kucoin.KucoinData import KucoinData
 from core.bot.condition import StrategyCondition
 
 from core.bot.middle_ware import DataFrame
-from core.bot.position import PositionType, Position, KucoinPosition, OrderType
+
+from core.bot.position import PositionType, Position, OrderType, KucoinPosition
 
 from core.bot.wallet_handler import WalletHandler, TestWallet
 
@@ -31,11 +32,12 @@ class Strategy(ABC):
         pass
 
     @abstractmethod
+
     def compute_indicators_step(self, symbol: str, frame: DataFrame):
         pass
 
     @abstractmethod
-    def get_take_profit(self, open_price: float, position_type: PositionType) -> float:
+    def get_take_profit(self, symbol: str, open_price: float, position_type: PositionType) -> float:
         pass
 
     @abstractmethod
@@ -66,6 +68,7 @@ class Strategy(ABC):
         for c in conditions:
             c.reset()
 
+
     def update_state(self, frame: DataFrame, verbose: bool = False):
 
         to_remove = []
@@ -92,7 +95,7 @@ class Strategy(ABC):
                 investment = self.get_margin_investment()
 
                 pos = KucoinPosition(frame.symbol, PositionType.LONG, OrderType.MARKET, datetime.datetime.utcnow(),
-                                     market_price, self.get_take_profit(market_price, PositionType.LONG),
+                                     market_price, self.get_take_profit(frame.symbol, market_price, PositionType.LONG),
                                      self.get_stop_loss(market_price, PositionType.LONG),
                                      self.get_margin_investment(),
                                      self.get_leverage(), self.wallet_handler)
@@ -107,7 +110,7 @@ class Strategy(ABC):
                 investment = self.get_margin_investment()
 
                 pos = KucoinPosition(frame.symbol, PositionType.SHORT, OrderType.MARKET, datetime.datetime.utcnow(),
-                                     market_price, self.get_take_profit(market_price, PositionType.LONG),
+                                     market_price, self.get_take_profit(frame.symbol, market_price, PositionType.LONG),
                                      self.get_stop_loss(market_price, PositionType.LONG),
                                      self.get_margin_investment(),
                                      self.get_leverage(), self.wallet_handler)

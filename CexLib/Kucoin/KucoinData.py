@@ -1,5 +1,10 @@
-
+import datetime
+import time
+import numpy as np
 from CexLib.Kucoin.KucoinRequest import KucoinFuturesBaseRestApi
+import os
+import csv
+
 
 class KucoinData(KucoinFuturesBaseRestApi):
 
@@ -40,24 +45,72 @@ class KucoinData(KucoinFuturesBaseRestApi):
             'currency': currency
         }
 
-        return self._request('GET', '/api/v1/kline/query?symbol=.KXBT&granularity=480&from=1535302400000&to=1559174400000')
+        params = {
+            'currency': currency
+        }
+
+        return self._request('GET', '/api/v1/withdrawals/quotas', params=params)
 
     def get_candles(self, symbol='XBTUSDTM', granularity='5'):
         params = {
             'symbol': symbol,
             'granularity': granularity,
         }
-        # 'from': '1647801240000',
-        # 'to': '1647797760000'
-        # return self._request('GET', '/api/v1/kline/query?symbol=XBTUSDTM&granularity=1')
-
-        # endpoint = '/api/v1/kline/query' + '?symbol=' + params['currency'] + '&granularity=' + params['granularity']
         return self._request('GET', '/api/v1/kline/query', params=params)
+
+    def get_history(self, symbol, granularity, start_date: datetime.datetime, end_date: datetime.datetime, save_csv=False, file = ''):
+        start = int(time.mktime(start_date.timetuple()) * 1000)
+        end = int(time.mktime(end_date.timetuple()) * 1000)
+        print('retrieving:', symbol)
+        params = {
+            'symbol': symbol,
+            'granularity': granularity,
+            'from': 1268305200000
+        }
+
+        first = self._request('GET', '/api/v1/kline/query', params=params)
+
+        if start < int(first[0][0]):
+            print('Data NOT availible before', datetime.datetime.utcfromtimestamp(first[0][0]/1000).strftime('%Y-%m-%d %H:%M:%S'), '(UNIX=',first[0][0], ')')
+            start = int(first[0][0])
+
+        data = []
+        step = granularity * 60 * 1000 * 200
+        finish = end
+
+        for i in range(start, end, step):
+            if end < i + step:
+                finish = end
+            else:
+                finish = i + step
+
+            params = {
+                'symbol': symbol,
+                'granularity': granularity,
+                'from': i,
+                'to': finish
+            }
+
+            data.extend(self._request('GET', '/api/v1/kline/query', params=params))
+            print('retrieved until', datetime.datetime.utcfromtimestamp(finish/1000).strftime('%Y-%m-%d %H:%M '))
+
+        if save_csv:
+
+            with open(file, "w", newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(data)
+
+        return data
+
+
 
 
 if __name__ == "__main__":
-    data = KucoinData('623252ae7d4ab90001d1d15f', '92974c9a-8bc1-42a1-9e54-5c7192d371c5', 'jackbot')
-    print(data.get_histo())
-    # for x in sorted(data.get_all_symbols()):
-    #     print(x)
-    pass
+    data = KucoinData(os.environ.get('FK_KEY'), os.environ.get('FK_SECRET'), os.environ.get('FK_PASS'))
+
+    # print(data._request('GET', '/api/v1/kline/query?symbol=XBTUSDTM&granularity=5&from=1268305200000'))
+    # xbt = data.get_history('XBTUSDTM', 5, datetime.datetime(2021, 3, 15, 10), datetime.datetime(2022, 3, 16, 10), save_csv=True)
+    # print(len(xbt))
+
+    print(len(data.get_all_symbols()))
+
