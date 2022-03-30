@@ -8,7 +8,7 @@ from CexLib.Kucoin.KucoinData import KucoinData
 from core.bot.condition import StrategyCondition
 
 from core.bot.middle_ware import DataFrame
-from core.bot.position import PositionType, Position
+from core.bot.position import PositionType, Position, KucoinPosition, OrderType
 
 from core.bot.wallet_handler import WalletHandler, TestWallet
 
@@ -31,8 +31,7 @@ class Strategy(ABC):
         pass
 
     @abstractmethod
-
-    def compute_indicators_step(self,symbol: str, frame):
+    def compute_indicators_step(self, symbol: str, frame: DataFrame):
         pass
 
     @abstractmethod
@@ -67,10 +66,7 @@ class Strategy(ABC):
         for c in conditions:
             c.reset()
 
-
-
-
-    def update_state(self, frame, verbose: bool = False):
+    def update_state(self, frame: DataFrame, verbose: bool = False):
 
         to_remove = []
         for pos in self.open_positions:
@@ -121,4 +117,3 @@ class Strategy(ABC):
                 self.open_positions.append(pos)
                 if verbose: print("\nOpened position: " + str(pos))
                 self.__reset_conditions(self.__long_conditions)  # resetta le condizioni, in caso che siano perpetue
-

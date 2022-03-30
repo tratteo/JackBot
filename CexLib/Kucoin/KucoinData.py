@@ -56,8 +56,8 @@ class KucoinData(KucoinFuturesBaseRestApi):
 
 
 if __name__ == "__main__":
-    data = KucoinData(os.environ.get('FKUCOIN_KEY'), os.environ.get('FKUCOIN_SECRET'), os.environ.get('FKUCOIN_PASS'))
-
+    data = KucoinData('623252ae7d4ab90001d1d15f', '92974c9a-8bc1-42a1-9e54-5c7192d371c5', 'jackbot')
+    print(data.get_histo())
     # for x in sorted(data.get_all_symbols()):
     #     print(x)
     pass
