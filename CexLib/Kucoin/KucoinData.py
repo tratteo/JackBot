@@ -1,3 +1,4 @@
+
 import datetime
 import time
 import numpy as np
@@ -7,6 +8,7 @@ import csv
 
 
 class KucoinData(KucoinFuturesBaseRestApi):
+
 
     def __init__(self, key, secret, passphrase, is_sandbox=False, url='', is_v1api=False):
         super().__init__(key, secret, passphrase, is_sandbox, url, is_v1api)
@@ -44,6 +46,7 @@ class KucoinData(KucoinFuturesBaseRestApi):
         params = {
             'currency': currency
         }
+
 
         params = {
             'currency': currency

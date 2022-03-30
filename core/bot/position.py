@@ -31,7 +31,6 @@ class Env(Enum):
     Kucoin = 0,
     Binace = 1
 
-
 class Position(ABC):
 
     def __init__(self, currency: str, pos_type: PositionType, ord_type: OrderType, open_date: datetime.date,
@@ -54,7 +53,6 @@ class Position(ABC):
         self.ord_type = ord_type
 
     def should_close(self, current_price: float) -> [bool, bool]:
-
         """Return if should close, win/loss"""
 
         if self.pos_type == PositionType.LONG:
@@ -76,6 +74,7 @@ class Position(ABC):
                 self.won = False
 
         return self.closed
+
 
     def __str__(self):
         if self.closed:
@@ -138,6 +137,7 @@ class KucoinPosition(Position):
 
 
 
+
 class BinancePosition(Position):
 
     def __init__(self, currency: str, pos_type: PositionType, ord_type: OrderType, open_date: datetime.date,
@@ -158,17 +158,6 @@ class BinancePosition(Position):
                         symbol=self.currency,
                         quantity=self.investment,
                         price=self.open_price)
-
-                # not working
-
-                # self.stop_info = wallet_handler.client.order_oco_sell(
-                #     symbol= 'BTCUSDT',
-                #     quantity=self.investment,
-                #     price=take_profit,
-                #     stopPrice=self.open_price,
-                #     stopLimitPrice= take_profit,
-                #     stopLimitTimeInForce= 'FOK')
-
             else:
                 print("Not a BinanceWallet")
 

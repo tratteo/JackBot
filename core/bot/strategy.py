@@ -16,6 +16,8 @@ from core.bot.wallet_handler import WalletHandler, TestWallet
 
 class Strategy(ABC):
 
+    #condizioni in base alle quali entriamo o usciamo da una posizione
+
     def __init__(self, wallet_handler: WalletHandler, max_positions: int):
         self.max_positions = max_positions
         self.open_positions = []
@@ -80,6 +82,7 @@ class Strategy(ABC):
 
         for rem in to_remove:
             self.open_positions.remove(rem)
+
 
         market_price = self.data.get_current_mark_price(frame.symbol)
         self.compute_indicators_step(frame)
