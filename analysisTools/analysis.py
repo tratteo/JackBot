@@ -1,32 +1,62 @@
-import pandas
+
+import datetime
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+import os
+from CexLib.Kucoin.KucoinData import KucoinData
 
+KData = KucoinData(os.environ.get('FK_KEY'), os.environ.get('FK_SECRET'), os.environ.get('FK_PASS'))
 
-data = pandas.read_csv('analysisRes/cointegration.csv')
+print(os.getcwd())
+data = pd.read_csv(r'analysisTools/cointegration.csv')
+
 data = data.sort_values(by='df')
+window = 192
+end_training = 550
+start = datetime.datetime(2022, 3, 14)
+end = datetime.datetime(2022, 3, 28)
 
-list =  data.iloc[0]['pair'].split('-')
-file = 'data/' + list[0] + '_5m_1 Mar, 2022.csv'
-x = pandas.read_csv(file, header=None)
-x = (x[1] + x[4]) / 2
-xm = x/np.mean(x)
+list = []
+for i in range(10):
+    list =  data.iloc[i]['pair'].split('-')
+    print(list)
 
-file = 'data/' + list[1] + '_5m_1 Mar, 2022.csv'
-y = pandas.read_csv(file, header=None)
-y = (y[1] + y[4]) / 2
-ym = y/np.mean(y)
+    file = np.array(pd.read_csv(os.path.join('data1', list[0] + '_302022-03-14 00:00:002022-03-28 00:00:00.csv')))
+    meanPrice = (file[:,1] + file[:,4]) / 2
+    dates = file[:,0]
+    dates = [datetime.datetime.utcfromtimestamp(int(i)/1000).strftime('%Y-%m-%d %H:%M') for i in dates]
+    xm = np.array(meanPrice) / (np.array(pd.DataFrame(meanPrice).rolling(window=window).mean()).T)[0]
 
-fig, axs = plt.subplots(3)
+    file = np.array(pd.read_csv(os.path.join('data1', list[1] + '_302022-03-14 00:00:002022-03-28 00:00:00.csv')))
+    meanPrice = (file[:, 1] + file[:, 4]) / 2
+    ym = np.array(meanPrice) / (np.array(pd.DataFrame(meanPrice).rolling(window=window).mean()).T)[0]
 
-axs[0].plot(ym)
-axs[0].plot(xm)
+    if len(xm) < len(ym):
+        ym = ym[:len(xm)]
+    else:
+        xm = xm[:len(ym)]
 
-axs[1].plot(xm/ym)
+    fig, axs = plt.subplots(2)
+    fig.suptitle(list[0] + " " + list[1])
 
-axs[2].plot(2*(xm - ym))
+    axs[0].plot(dates, ym,  label= list[0])
+    axs[0].plot(xm, label=list[1])
 
+    axs[0].legend()
+    axs[0].axvline(x=end_training, color='r')
+    axs[1].axvline(x=end_training, color='r')
+    axs[1].plot(dates,xm - ym)
 
+    every_nth = 100
+    for n, label in enumerate(axs[0].xaxis.get_ticklabels()):
+        if n % every_nth != 0:
+            label.set_visible(False)
 
-plt.show()
+    for n, label in enumerate(axs[1].xaxis.get_ticklabels()):
+        if n % every_nth != 0:
+            label.set_visible(False)
+
+    plt.show()
+
 

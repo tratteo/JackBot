@@ -86,7 +86,7 @@ class AtrSrsi3EmaStrategy(Strategy):
             EventStrategyCondition(self.short_event_condition, self.interval_tolerance)
         ]
 
-    def long_perpetual_condition(self, frame) -> bool:
+    def long_perpetual_condition(self, frame):
         close = float(frame.close_price)
         symbol = frame.symbol
         if symbol is not self.current_ema8 or symbol is not self.current_ema14 or symbol is not self.current_ema50 : return False
@@ -95,13 +95,15 @@ class AtrSrsi3EmaStrategy(Strategy):
     def long_event_condition(self, frame) -> bool:
         symbol = frame.symbol
         if symbol is not self.last_k or symbol is not self.current_k or symbol is not self.last_d or symbol is not self.current_d: return False
-        return self.last_k <= self.last_d and self.current_k > self.current_d
+        return self.last_k[symbol]  <= self.last_d[symbol]  and self.current_k[symbol]  > self.current_d[symbol]
 
     def short_perpetual_condition(self, frame) -> bool:
-        close = float(frame["c"])
-        if self.current_ema8 is np.nan or self.current_ema14 is np.nan or self.current_ema50 is np.nan: return False
-        return self.current_ema50 > self.current_ema14 > self.current_ema8 > close
+        close = frame.close_price
+        symbol = frame.symbol
+        if symbol is not self.current_ema8 is np.nan or symbol is not  self.current_ema14 is np.nan or symbol is not self.current_ema50 is np.nan: return False
+        return self.current_ema50[symbol]  > self.current_ema14[symbol]  > self.current_ema8[symbol]  > close
 
     def short_event_condition(self, frame) -> bool:
-        if self.last_k is np.nan or self.current_k is np.nan or self.last_d is np.nan or self.current_d is np.nan: return False
-        return self.last_k >= self.last_d and self.current_k < self.current_d
+        symbol = frame.symbol
+        if symbol is not self.last_k or symbol is not self.current_k or symbol is not self.last_d  or symbol is not self.current_d : return False
+        return self.last_k[symbol]  >= self.last_d[symbol]  and self.current_k[symbol]  < self.current_d[symbol]

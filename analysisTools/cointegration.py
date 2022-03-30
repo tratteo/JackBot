@@ -18,16 +18,17 @@ def cointegration_test(y, x):
 
 
 results = []
-symb2 = os.listdir('data')
-for s1 in os.listdir('data')[:2]:
+symb2 = os.listdir('data1')
+for s1 in os.listdir('data1'):
     symb2.remove(s1)
 
     if len(symb2) > 0:
         for s2 in symb2:
             print(s1, s2)
 
-            y = pandas.read_csv(os.path.join('data', s1), header=None)
-            x = pandas.read_csv(os.path.join('data', s2), header=None)
+            # 434: 9 days candle 30 minutes
+            y = pandas.read_csv(os.path.join('data1', s1), header=None)[:550]
+            x = pandas.read_csv(os.path.join('data1', s2), header=None)[:550]
 
             y = (y[1] + y[4]) / 2
             x = (x[1] + x[4]) / 2
@@ -45,6 +46,6 @@ for s1 in os.listdir('data')[:2]:
 
             results.append(save)
 
-with open('../analysisRes/cointegration.csv', "w", newline='') as f:
+with open('analysisTools/cointegration.csv', "w", newline='') as f:
     writer = csv.writer(f)
     writer.writerows(results)
