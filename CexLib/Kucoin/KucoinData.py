@@ -113,3 +113,4 @@ if __name__ == "__main__":
     # print(len(xbt))
 
     print(len(data.get_all_symbols()))
+

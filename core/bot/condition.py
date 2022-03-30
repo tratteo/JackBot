@@ -2,6 +2,8 @@ from abc import abstractmethod, ABC
 from core.bot.data_frame import DataFrame
 from typing import Callable
 
+from core.bot.data_frame import DataFrame
+
 
 class StrategyCondition(ABC):
 
@@ -9,7 +11,7 @@ class StrategyCondition(ABC):
         self.satisfied = False
 
     @abstractmethod
-    def tick(self, frame):
+    def tick(self, frame): #frame must be DataFrame and fix the other function
         pass
 
     @abstractmethod
