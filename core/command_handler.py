@@ -103,7 +103,7 @@ class CommandHandlerBuilder:
         return self
 
     def on_fail(self, fail_delegate: Callable[[str], None]):
-        """adds delegate function which is executed when there is incorrect syntax
+        """Adds delegate function which is executed when there is incorrect syntax
 
         Parameters:
             fail_delegate: Delegate function
@@ -112,7 +112,7 @@ class CommandHandlerBuilder:
         return self
 
     def on_help(self, help_delegate: Callable[[str], None]):
-        """adds delegate function for syntax help
+        """Adds delegate function for syntax help
 
         Parameters:
             help_delegate: Delegate function
@@ -120,13 +120,12 @@ class CommandHandlerBuilder:
         self.command_handler.help_delegate = help_delegate
         return self
 
-    def build(self, args: list[str]) :
-        """function to manage system string argument
+    def build(self, args: list[str]) -> CommandHandler:
+        """Function to manage system string argument
 
         Parameters:
             args: System string argument
         """
-
         args = args.copy()
         args.pop(0)
         if len(args) <= 0 or args[0] == "help" and self.command_handler.help_delegate is not None:

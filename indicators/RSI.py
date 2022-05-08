@@ -3,10 +3,6 @@ import itertools
 from collections import deque
 
 import numpy as np
-import talib as ta
-from numpy import genfromtxt
-
-import config
 
 
 class RSI:
@@ -56,25 +52,3 @@ class RSI:
             return np.nan
 
         return 100 - (100 / (1 + (self.gain / self.loss)))
-
-
-if __name__ == "__main__":
-
-    rsi = RSI()
-    OPEN_T: int = 0
-    HIGH: int = 2
-    LOW: int = 3
-    CLOSE: int = 4
-    CLOSE_T: int = 6
-
-    data = genfromtxt(r"..\bot\data\ETHUSDT_1-6_2021.csv", delimiter = config.DEFAULT_DELIMITER)
-    close = data[:, CLOSE][:100]
-    high = data[:, HIGH][:100]
-    low = data[:, LOW][:100]
-
-    print(len(high))
-
-    for n, i in enumerate(close):
-        print(n, " my ", rsi.compute_next(i))
-        print(n, " ta ", ta.RSI(close)[n])
-        print()

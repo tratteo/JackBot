@@ -3,7 +3,6 @@ import copy
 import numpy
 
 from core import lib
-from core.bot.data_frame import DataFrame
 from core.bot.strategy import Strategy
 from core.bot.wallet_handler import TestWallet
 
@@ -12,6 +11,31 @@ HIGH: int = 2
 LOW: int = 3
 CLOSE: int = 4
 CLOSE_T: int = 6
+
+frame_message = {
+    "e": "kline",
+    "E": 123456789,
+    "s": "REDACTED",
+    "k": {
+        "t": 123400000,
+        "T": 123460000,
+        "s": "REDACTED",
+        "i": "1m",
+        "f": 100,
+        "L": 200,
+        "o": "0.0010",
+        "c": "close",
+        "h": "high",
+        "l": "low",
+        "v": "1000",
+        "n": 100,
+        "x": "isClosed",
+        "q": "1.0000",
+        "V": "500",
+        "Q": "0.500",
+        "B": "123456"
+    }
+}
 
 
 class TestResult:
@@ -39,12 +63,14 @@ class TestResult:
         won = 0
         for c in result.closed_positions:
             result.total_profit += c.profit
-            if c.won: won += 1
-        result.win_ratio = 0
+            if c.won:
+                won += 1
+
         result.final_balance = result.initial_balance + result.total_profit
-        if len(strategy.closed_positions) > 0: result.win_ratio = won / len(strategy.closed_positions)
-        # result.estimated_apy = (((((((result.final_balance / initial_balance) - 1) * 100) / result.days) / 100) + 1) ** 365 - 1) * 100
-        result.estimated_apy = (365 / result.days) * ((result.final_balance / result.initial_balance) - 1) * 100
+        if len(strategy.closed_positions) > 0:
+            result.win_ratio = won / len(strategy.closed_positions)
+
+        result.estimated_apy = (((result.final_balance / result.initial_balance) ** (365 / result.days)) - 1) * 100
         result.opened_positions = len(strategy.open_positions) + len(strategy.closed_positions)
         return result
 
@@ -64,13 +90,13 @@ class TestResult:
                "\n{:<25s}{:^4.3f}".format("Estimated apy: ", self.estimated_apy) + "%"
 
 
-def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_delegate,
-             balance_update_interval: int = 1440, timeframe: int = 3, index: int = 0) -> [TestResult, list[float], int]:
+def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_delegate = None, balance_update_interval: int = 1440, timeframe: int = 3, index: int = 0) -> [TestResult,
+                                                                                                                                                                                     list[float],
+                                                                                                                                                                                     int]:
     epoch = 0
     high = data[epoch, HIGH]
     low = data[epoch, LOW]
     start_time = 0
-    frame = DataFrame()
     time_span = len(data)
     balance_trend = []
     if not isinstance(strategy.wallet_handler, TestWallet):
@@ -82,12 +108,12 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
     try:
         while epoch < time_span:
             if epoch + 1 >= len(data): break
-            frame.close_price = str(data[epoch, CLOSE])
-            frame.high_price = str(data[epoch, HIGH])
-            frame.low_price = str(data[epoch, LOW])
-            frame.start_time = str(data[epoch, OPEN_T])
-            frame.close_time = str(data[epoch, CLOSE_T])
-            frame.is_closed = False
+            frame_message["k"]["c"] = str(data[epoch, CLOSE])
+            frame_message["k"]["h"] = str(data[epoch, HIGH])
+            frame_message["k"]["l"] = str(data[epoch, LOW])
+            frame_message["k"]["t"] = str(data[epoch, OPEN_T])
+            frame_message["k"]["T"] = str(data[epoch, CLOSE_T])
+            frame_message["k"]["x"] = False
             if high < data[epoch, HIGH]:
                 high = data[epoch, HIGH]
 
@@ -95,23 +121,22 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
                 low = data[epoch, LOW]
 
             if epoch != 0 and (epoch % timeframe) == timeframe - 1:
-                frame.is_closed = True
-                frame.high_price = str(high)
-                frame.low_price = str(low)
-                frame.start_time = start_time
-                frame.close_time = data[epoch, CLOSE_T]
+                frame_message["k"]["x"] = True
+                frame_message["k"]["h"] = str(high)
+                frame_message["k"]["l"] = str(low)
+                frame_message["k"]["t"] = start_time
+                frame_message["k"]["T"] = data[epoch, CLOSE_T]
 
                 # Set defaults to next candle
                 high = data[epoch + 1, 2]
                 low = data[epoch + 1, 3]
                 start_time = data[epoch + 1, 0]
             if epoch % balance_update_interval == 0: balance_trend.append(strategy.wallet_handler.get_balance())
-            strategy.update_state(frame)
-            if epoch % progress_reporter_span == 0 and progress_delegate is not None: progress_delegate(
-                progress_reporter_span)
+            strategy.update_state(frame_message)
+            if epoch % progress_reporter_span == 0 and progress_delegate is not None: progress_delegate(progress_reporter_span)
             epoch += 1
     except (KeyboardInterrupt, SystemExit):
-        print("\nWorker " + str(index) + " interrupted", flush=True)
+        print("\nWorker " + str(index) + " interrupted", flush = True)
         # for p in strategy.open_positions:
         #     strategy.wallet_handler.balance += p.investment
         return None, balance_trend, index

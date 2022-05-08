@@ -1,8 +1,6 @@
 from collections import deque
 
 import numpy as np
-import talib as ta
-from numpy import genfromtxt
 
 
 class STOCH:
@@ -49,31 +47,3 @@ class STOCH:
 
         else:
             return np.nan, np.nan
-
-
-if __name__ == "__main__":
-
-    stoch = STOCH()
-    OPEN_T: int = 0
-    HIGH: int = 2
-    LOW: int = 3
-    CLOSE: int = 4
-    CLOSE_T: int = 6
-
-    data = genfromtxt("../data/ETHUSDT_1-6_2021.csv", delimiter = ';')
-    close = data[:, CLOSE][:100]
-    high = data[:, HIGH][:100]
-    low = data[:, LOW][:100]
-
-    k_wind = []
-    d_wind = []
-
-    for i in range(len(close)):
-        print(
-            ta.STOCH(high, low, close, fastk_period = 14, slowk_period = 3, slowk_matype = 0, slowd_period = 3, slowd_matype = 0)[0][i],
-            ta.STOCH(high, low, close, fastk_period = 14, slowk_period = 3, slowk_matype = 0, slowd_period = 3, slowd_matype = 0)[1][i])
-
-        # print("his"  , stochastic(np.array(close[:i+1]), np.array(low[:i+1]), np.array(high[:i+1]), k_wind, d_wind) )
-
-        print("my", stoch.compute_next(close[i], low[i], high[i]))
-        print()

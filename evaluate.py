@@ -3,14 +3,15 @@ import json
 import sys
 
 import matplotlib.pyplot as plot
+import numpy as np
 from numpy import genfromtxt
 
 import config
-from core.bot import dataset_evaluator
 from core import lib
+from core.bot import dataset_evaluator
+from core.bot.wallet_handler import TestWallet
 from core.command_handler import CommandHandler
 from core.lib import ProgressBar
-from strategies.StochRsiMacdStrategy import *
 
 
 def helper(helper_str: str):

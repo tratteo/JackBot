@@ -100,7 +100,8 @@ class ProgressBar:
 
     def render(self):
         if self.show_percentage:
-            sys.stdout.write("{0:}{1:}{2:} {3:.2f}%\r".format(self.style_edges[0], self.style_fill * self.current_length + " " * (self.width - self.current_length), self.style_edges[1], float(self.percentage * 100)))
+            sys.stdout.write("{0:}{1:}{2:} {3:.2f}%\r".format(self.style_edges[0], self.style_fill * self.current_length + " " * (self.width - self.current_length), self.style_edges[1],
+                                                              float(self.percentage * 100)))
         else:
             sys.stdout.write("{0:}{1:}{2:}\r".format(self.style_edges[0], self.style_fill * self.current_length + " " * (self.width - self.current_length), self.style_edges[1]))
         sys.stdout.flush()

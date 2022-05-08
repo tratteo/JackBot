@@ -1,8 +1,6 @@
 from collections import deque
 
 import numpy as np
-import talib as ta
-from numpy import genfromtxt
 
 from indicators.RSI import RSI
 from indicators.STOCH import STOCH
@@ -31,28 +29,3 @@ class STOCHRSI:
             return np.nan, np.nan
 
         return fast_k, fast_d
-
-
-if __name__ == "__main__":
-
-    stochrsi = STOCHRSI()
-    OPEN_T: int = 0
-    HIGH: int = 2
-    LOW: int = 3
-    CLOSE: int = 4
-    CLOSE_T: int = 6
-
-    data = genfromtxt(r"data\ETHUSDT_1-6_2021.csv", delimiter = ";")
-    close = data[:, CLOSE][:100]
-    high = data[:, HIGH][:100]
-    low = data[:, LOW][:100]
-
-    for i in range(len(close)):
-        print(
-            ta.STOCHRSI(close, timeperiod = 14, fastk_period = 14, fastd_period = 3)[0][i],
-            ta.STOCHRSI(close, timeperiod = 14, fastk_period = 14, fastd_period = 3)[1][i])
-
-        # print("his"  , stochastic(np.array(close[:i+1]), np.array(low[:i+1]), np.array(high[:i+1]), k_wind, d_wind) )
-
-        print("my", stochrsi.compute_next(close[i]))
-        print()

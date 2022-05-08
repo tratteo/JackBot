@@ -1,8 +1,6 @@
 from abc import abstractmethod, ABC
-from core.bot.data_frame import DataFrame
-from typing import Callable
 
-from core.bot.data_frame import DataFrame
+from typing import Callable
 
 
 class StrategyCondition(ABC):
@@ -11,7 +9,7 @@ class StrategyCondition(ABC):
         self.satisfied = False
 
     @abstractmethod
-    def tick(self, frame): #frame must be DataFrame and fix the other function
+    def tick(self, frame):
         pass
 
     @abstractmethod
@@ -21,8 +19,8 @@ class StrategyCondition(ABC):
 
 
 class PerpetualStrategyCondition(StrategyCondition):
-    """Check if the condition is satisfied and remains true until reset"""
-    def __init__(self, condition_delegate: Callable[[DataFrame], bool]):
+
+    def __init__(self, condition_delegate: Callable[[dict], bool]):
         super().__init__()
         self.__condition_delegate = condition_delegate
 
@@ -37,9 +35,7 @@ class PerpetualStrategyCondition(StrategyCondition):
 
 class EventStrategyCondition(StrategyCondition):
 
-    """Check if event has occurred, and remains true for true 'tolerance_duration' ticks"""
-
-    def __init__(self, condition_delegate: Callable[[DataFrame], bool], tolerance_duration: int):
+    def __init__(self, condition_delegate: Callable[[dict], bool], tolerance_duration: int):
         super().__init__()
         self.__condition_delegate = condition_delegate
         self.__tolerance_duration = tolerance_duration
@@ -63,10 +59,7 @@ class EventStrategyCondition(StrategyCondition):
 
 class BoundedStrategyCondition(StrategyCondition):
 
-    """Check if condition is true, it will keep being true if the condition is satisfied and for a number of ticks
-    equal to 'duration_tolerance"""
-
-    def __init__(self, valid_condition_delegate: Callable[[DataFrame], bool], invalid_condition_delegate: Callable[[DataFrame], bool], duration_tolerance: int = 0):
+    def __init__(self, valid_condition_delegate: Callable[[dict], bool], invalid_condition_delegate: Callable[[dict], bool], duration_tolerance: int = 0):
         super().__init__()
         self.__valid_condition_delegate = valid_condition_delegate
         self.__invalid_condition_delegate = invalid_condition_delegate

@@ -1,0 +1,4 @@
+colorama==0.4.4
+inspyred==1.0.1
+matplotlib==3.5.2
+numpy==1.22.3

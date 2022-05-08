@@ -1,10 +1,6 @@
 from collections import deque
 
 import numpy as np
-import talib as ta
-from numpy import genfromtxt
-
-import config
 
 
 class ATR:

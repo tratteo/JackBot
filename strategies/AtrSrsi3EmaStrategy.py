@@ -18,58 +18,53 @@ class AtrSrsi3EmaStrategy(Strategy):
         interval_tolerance
     """
 
-    MAX_OPEN_POSITIONS_NUMBER = 2
+    MAX_OPEN_POSITIONS_NUMBER = 1
 
     def __init__(self, wallet_handler: WalletHandler, **strategy_params):
-
         self.risk_reward_ratio = strategy_params["risk_reward_ratio"]
         self.atr_factor = strategy_params["atr_factor"]
         self.investment_rate = strategy_params["investment_ratio"]
         self.interval_tolerance = strategy_params["interval_tolerance"]
-        self.leverage = strategy_params["leverage"]
 
         self.ema8 = EMA(period = 8)
-        self.current_ema8 = {}
+        self.current_ema8 = np.nan
         self.ema14 = EMA(period = 14)
-        self.current_ema14 = {}
+        self.current_ema14 = np.nan
         self.ema50 = EMA(period = 50)
-        self.current_ema50 = {}
+        self.current_ema50 = np.nan
 
         self.stoch_rsi = STOCHRSI()
-        self.current_k = {}
-        self.last_k = {}
-        self.current_d = {}
-        self.last_d = {}
+        self.current_k = np.nan
+        self.last_k = np.nan
+        self.current_d = np.nan
+        self.last_d = np.nan
         self.atr = ATR()
-        self.current_atr = {}
+        self.current_atr = np.nan
         super().__init__(wallet_handler, self.MAX_OPEN_POSITIONS_NUMBER)
 
-    def compute_indicators_step(self, symbol,  frame):
-        close = float(frame.close_time)
-        high = float(frame.high_price)
-        low = float(frame.low_price)
-        self.current_ema8[symbol] = self.ema8.compute_next(close)
-        self.current_ema14[symbol] = self.ema14.compute_next(close)
-        self.current_ema50[symbol] = self.ema50.compute_next(close)
-        self.last_k[symbol] = self.current_k
-        self.last_d[symbol] = self.current_d
-        self.current_k[symbol], self.current_d[symbol] = self.stoch_rsi.compute_next(close)
-        self.current_atr[symbol] = self.atr.compute_next(high, low, close)
+    def compute_indicators_step(self, frame):
+        close = float(frame["c"])
+        high = float(frame["h"])
+        low = float(frame["l"])
+        self.current_ema8 = self.ema8.compute_next(close)
+        self.current_ema14 = self.ema14.compute_next(close)
+        self.current_ema50 = self.ema50.compute_next(close)
+        self.last_k = self.current_k
+        self.last_d = self.current_d
+        self.current_k, self.current_d = self.stoch_rsi.compute_next(close)
+        self.current_atr = self.atr.compute_next(high, low, close)
 
-    def get_stop_loss(self, symbol, open_price: float, position_type: PositionType) -> float:
+    def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
         if position_type == PositionType.LONG:
-            return open_price - (self.atr_factor * self.current_atr[symbol])
+            return open_price - (self.atr_factor * self.current_atr)
         elif position_type == PositionType.SHORT:
-            return open_price + (self.atr_factor * self.current_atr[symbol])
+            return open_price + (self.atr_factor * self.current_atr)
 
-    def get_take_profit(self, symbol, open_price: float, position_type: PositionType) -> float:
+    def get_take_profit(self, open_price: float, position_type: PositionType) -> float:
         if position_type == PositionType.LONG:
-            return open_price + (self.risk_reward_ratio * self.atr_factor * self.current_atr[symbol])
+            return open_price + (self.risk_reward_ratio * self.atr_factor * self.current_atr)
         elif position_type == PositionType.SHORT:
-            return open_price - (self.risk_reward_ratio * self.atr_factor * self.current_atr[symbol])
-
-    def get_leverage(self) -> float:
-        return self.leverage
+            return open_price - (self.risk_reward_ratio * self.atr_factor * self.current_atr)
 
     def get_margin_investment(self) -> float:
         return self.wallet_handler.get_balance() * self.investment_rate
@@ -86,24 +81,20 @@ class AtrSrsi3EmaStrategy(Strategy):
             EventStrategyCondition(self.short_event_condition, self.interval_tolerance)
         ]
 
-    def long_perpetual_condition(self, frame):
-        close = float(frame.close_price)
-        symbol = frame.symbol
-        if symbol is not self.current_ema8 or symbol is not self.current_ema14 or symbol is not self.current_ema50 : return False
-        return self.current_ema50[symbol] < self.current_ema14[symbol] < self.current_ema8[symbol] < close
+    def long_perpetual_condition(self, frame) -> bool:
+        close = float(frame["c"])
+        if self.current_ema8 is np.nan or self.current_ema14 is np.nan or self.current_ema50 is np.nan: return False
+        return self.current_ema50 < self.current_ema14 < self.current_ema8 < close
 
     def long_event_condition(self, frame) -> bool:
-        symbol = frame.symbol
-        if symbol is not self.last_k or symbol is not self.current_k or symbol is not self.last_d or symbol is not self.current_d: return False
-        return self.last_k[symbol]  <= self.last_d[symbol]  and self.current_k[symbol]  > self.current_d[symbol]
+        if self.last_k is np.nan or self.current_k is np.nan or self.last_d is np.nan or self.current_d is np.nan: return False
+        return self.last_k <= self.last_d and self.current_k > self.current_d
 
     def short_perpetual_condition(self, frame) -> bool:
-        close = frame.close_price
-        symbol = frame.symbol
-        if symbol is not self.current_ema8 is np.nan or symbol is not  self.current_ema14 is np.nan or symbol is not self.current_ema50 is np.nan: return False
-        return self.current_ema50[symbol]  > self.current_ema14[symbol]  > self.current_ema8[symbol]  > close
+        close = float(frame["c"])
+        if self.current_ema8 is np.nan or self.current_ema14 is np.nan or self.current_ema50 is np.nan: return False
+        return self.current_ema50 > self.current_ema14 > self.current_ema8 > close
 
     def short_event_condition(self, frame) -> bool:
-        symbol = frame.symbol
-        if symbol is not self.last_k or symbol is not self.current_k or symbol is not self.last_d  or symbol is not self.current_d : return False
-        return self.last_k[symbol]  >= self.last_d[symbol]  and self.current_k[symbol]  < self.current_d[symbol]
+        if self.last_k is np.nan or self.current_k is np.nan or self.last_d is np.nan or self.current_d is np.nan: return False
+        return self.last_k >= self.last_d and self.current_k < self.current_d
