@@ -1,3 +1,4 @@
+import copy
 import math
 
 from colorama import Fore
@@ -28,7 +29,7 @@ def calculate_fitness(test_result: TestResult) -> float:
         s += p.result_percentage
     s /= len(test_result.closed_positions)
 
-    fitness = math.log(math.exp(a * test_result.win_ratio + b * s) + 1) + math.log(c * len(test_result.closed_positions))
+    fitness = math.log(math.exp(a * test_result.win_ratio + b * s) + c * len(test_result.closed_positions))
     return fitness
 
 
@@ -36,36 +37,54 @@ def evaluator(candidates, args):
     """Evaluate the candidates"""
     initial_balance = 1000
     fitnesses = []
+    num_generations = args.get("num_generations")
+    if num_generations is None:
+        num_generations = 0
     parameters = args.get("parameters")
-    evaluate_data = args.get("dataset")
+    dataset_epochs = args.get("dataset_epochs")
+    datasets = args.get("datasets")
+    mp_manager_list = args.get("mp_manager_list")
+    dataset_index = math.ceil(num_generations / dataset_epochs) % dataset_epochs
+    evaluate_data = datasets[dataset_index]
     timeframe = args.get("timeframe")
     strategy_class = args.get("strategy_class")
-    for c in candidates:
+    for i, c in enumerate(candidates):
         strategy = strategy_class(TestWallet.factory(initial_balance), **dict([(p[1]["name"], p[0]) for p in zip(c, parameters)]))
-        res = dataset_evaluator.evaluate(strategy, initial_balance, evaluate_data, timeframe = timeframe)
-        result, balance, index = res
-        fitnesses.append(calculate_fitness(result))
+        result, _, _ = dataset_evaluator.evaluate(strategy, initial_balance, evaluate_data, timeframe = timeframe)
+        fit = calculate_fitness(result)
+        fitnesses.append(fit)
+        mp_manager_list.append(copy.deepcopy(result))
     return fitnesses
 
 
-def mutator(random, candidates, args):
+def gaussian_adj_mutator(random, candidates, args):
     """Apply the mutation operator on all candidates"""
     bound = args.get("_ec").bounder
+    parameters = args.get("parameters")
     mutation_rate = args.get("mutation_rate")
     for i, cs in enumerate(candidates):
         for j, g in enumerate(cs):
-            if random.random() < mutation_rate:
-                g += random.uniform(-1, 1)
-                candidates[i][j] = g
+            if random.random() > mutation_rate:
+                continue
+            mean = (parameters[j]["upper_bound"] - parameters[j]["lower_bound"]) / 2
+            stdv = (parameters[j]["upper_bound"] - parameters[j]["lower_bound"]) / 14
+            g += random.gauss(mean, stdv)
+            candidates[i][j] = g
         candidates[i] = bound(candidates[i], args)
     return candidates
 
 
 def observer(population, num_generations, num_evaluations, args):
     """Observe the population evolving"""
+    print("\nCurrent pop N: {0}".format(len(population)))
+    mp_manager_list = args.get("mp_manager_list")
+    print("Current tests N: {0}".format(len(mp_manager_list)))
     strategy_class = args.get("strategy_class")
     timeframe = args.get("timeframe")
-    print("\n{0} on {1}".format(strategy_class, lib.get_flag_from_minutes(timeframe)))
+    best = max(mp_manager_list, key = lambda x: calculate_fitness(x))
+    if best is not None:
+        print("Best test:\n{0}".format(str(best)))
+    print("{0} on {1}".format(strategy_class, lib.get_flag_from_minutes(timeframe)))
     print('Generation {0}, {1} evaluations'.format(num_generations, num_evaluations))
     parameters = args.get("parameters")
     zipped = zip(population[0].candidate, parameters)
@@ -75,7 +94,7 @@ def observer(population, num_generations, num_evaluations, args):
         if i < len(parameters) - 1:
             print(' | ', end = "")
     print(Fore.RESET)
-    pass
+    mp_manager_list[:] = []
 
 
 def bounder(candidate, args):

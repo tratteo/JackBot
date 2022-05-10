@@ -1,6 +1,8 @@
 import importlib
 import json
 import sys
+from multiprocessing import Manager
+from os import listdir
 from os.path import exists
 from random import Random
 from time import time
@@ -24,59 +26,82 @@ def failure(helper_str: str):
     exit(1)
 
 
-command_manager = CommandHandler.create() \
-    .positional("Genetic parameters") \
-    .positional("Dataset file") \
-    .on_help(helper) \
-    .on_fail(failure) \
-    .build(sys.argv)
-
-if not exists(command_manager.get_p(0)):
-    print("Unable to locate parameters file")
-    exit(1)
-with open(command_manager.get_p(0)) as file:
-    data = json.load(file)
-
-if not exists(command_manager.get_p(1)):
-    print("Unable to locate dataset file")
-    exit(1)
-
-dataset_path = command_manager.get_p(1)
+def load_data(path: str, datasets):
+    datasets.append()
 
 
-def main():
+def main(sync_manager: Manager):
     # Init params
+    command_manager = CommandHandler.create() \
+        .positional("Genetic parameters") \
+        .positional("Dataset folder") \
+        .on_help(helper) \
+        .on_fail(failure) \
+        .build(sys.argv)
+
+    if not exists(command_manager.get_p(0)):
+        print("Unable to locate parameters file")
+        exit(1)
+    with open(command_manager.get_p(0)) as file:
+        data = json.load(file)
+
+    if not exists(command_manager.get_p(1)):
+        print("Unable to locate dataset folder")
+        exit(1)
+
+    dataset_path = command_manager.get_p(1)
     rand = Random()
     rand.seed(int(time()))
-    dataset = genfromtxt(dataset_path, delimiter = config.DEFAULT_DELIMITER)
+    onlyfiles = [f for f in listdir(dataset_path) if f.endswith(".CSV") or f.endswith(".csv")]
+    print("Found {0} files in {1}".format(len(onlyfiles), dataset_path))
+    datasets = []
+
+    for f in onlyfiles:
+        # datasets.append(genfromtxt(dataset_path + "//" + f, delimiter = config.DEFAULT_DELIMITER))
+        print("Loading {0}...".format(f), flush = True)
+        datasets.append(genfromtxt(dataset_path + "//" + f, delimiter = config.DEFAULT_DELIMITER))
 
     # Create EA
-    my_ec = inspyred.ec.EvolutionaryComputation(rand)
-    my_ec.terminator = [inspyred.ec.terminators.evaluation_termination]
-    my_ec.variator = [mutator]
-    my_ec.replacer = inspyred.ec.replacers.steady_state_replacement
-    my_ec.observer = observer
-
+    ec = inspyred.ec.EvolutionaryComputation(rand)
+    ec.terminator = [inspyred.ec.terminators.generation_termination, inspyred.ec.terminators.average_fitness_termination]
+    ec.variator = [gaussian_adj_mutator, inspyred.ec.variators.uniform_crossover]
+    ec.selector = inspyred.ec.selectors.tournament_selection
+    ec.replacer = inspyred.ec.replacers.truncation_replacement
+    ec.observer = observer
     # Evolve
-    final_pop = my_ec.evolve(generator = generator,
-                             evaluator = inspyred.ec.evaluators.parallel_evaluation_mp,
-                             bounder = bounder,
-                             mp_evaluator = evaluator,
-                             mp_num_cpus = config.MAX_PROCESSES_NUMBER,
-                             maximize = True,
-                             pop_size = 32,
-                             max_evaluations = 1000,
-                             mutation_rate = 0.15,
-                             dataset = dataset,
-                             strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + data["strategy"]), data["strategy"]),
-                             timeframe = lib.get_minutes_from_flag(data["timeframe"]),
-                             parameters = data["parameters"])
+    print("Starting evolution", flush = True)
+
+    final_pop = ec.evolve(
+        # Operators
+        evaluator = inspyred.ec.evaluators.parallel_evaluation_mp,
+        generator = generator,
+        bounder = bounder,
+        mp_evaluator = evaluator,
+        mp_num_cpus = 4,
+        mp_manager_list = sync_manager.list([]),
+        # Variation
+        mutation_rate = 0.2,
+        crossover_rate = 1,
+        # Selection
+        num_selected = 32,
+        tournament_size = 8,
+        # Parameters
+        maximize = True,
+        pop_size = 64,
+        max_generations = 150,
+        # Custom params
+        datasets = datasets,
+        dataset_epochs = 10,
+        strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + data["strategy"]), data["strategy"]),
+        timeframe = lib.get_minutes_from_flag(data["timeframe"]),
+        parameters = data["parameters"])
 
     # Sort and print the best individual, who will be at index 0.
     final_pop.sort(reverse = True)
-    print('Terminated due to {0}.'.format(my_ec.termination_cause))
+    print('Terminated due to {0}.'.format(ec.termination_cause))
     print(final_pop[0])
 
 
 if __name__ == '__main__':
-    main()
+    with Manager() as manager:
+        main(manager)
