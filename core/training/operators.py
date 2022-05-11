@@ -1,4 +1,3 @@
-import copy
 import math
 
 from colorama import Fore
@@ -28,8 +27,8 @@ def calculate_fitness(test_result: TestResult) -> float:
     for p in test_result.closed_positions:
         s += p.result_percentage
     s /= len(test_result.closed_positions)
-
-    fitness = math.log(math.exp(a * test_result.win_ratio + b * s) + c * len(test_result.closed_positions))
+    # print("S: {0}", s)
+    fitness = math.log(math.exp(a * test_result.win_ratio + b * test_result.total_profit) + c * len(test_result.closed_positions))
     return fitness
 
 
@@ -40,20 +39,32 @@ def evaluator(candidates, args):
     num_generations = args.get("num_generations")
     if num_generations is None:
         num_generations = 0
+    cache_path = args.get("cache_path")
     parameters = args.get("parameters")
     dataset_epochs = args.get("dataset_epochs")
     datasets = args.get("datasets")
-    mp_manager_list = args.get("mp_manager_list")
     dataset_index = math.ceil(num_generations / dataset_epochs) % dataset_epochs
     evaluate_data = datasets[dataset_index]
     timeframe = args.get("timeframe")
     strategy_class = args.get("strategy_class")
+    job_index = args.get("job_index")
+
     for i, c in enumerate(candidates):
         strategy = strategy_class(TestWallet.factory(initial_balance), **dict([(p[1]["name"], p[0]) for p in zip(c, parameters)]))
         result, _, _ = dataset_evaluator.evaluate(strategy, initial_balance, evaluate_data, timeframe = timeframe)
+        if result is None:
+            fitnesses.append(0)
+            continue
         fit = calculate_fitness(result)
         fitnesses.append(fit)
-        mp_manager_list.append(copy.deepcopy(result))
+        # TODO append test results
+        # mp_manager_list.append(result)
+        path = cache_path + str(job_index.value) + ".json"
+        lib.create_folders_in_path(path)
+        with open(path, "w") as file:
+            # Writing data to a file
+            file.write(result.to_json())
+        job_index.value += 1
     return fitnesses
 
 
@@ -77,13 +88,20 @@ def gaussian_adj_mutator(random, candidates, args):
 def observer(population, num_generations, num_evaluations, args):
     """Observe the population evolving"""
     print("\nCurrent pop N: {0}".format(len(population)))
-    mp_manager_list = args.get("mp_manager_list")
-    print("Current tests N: {0}".format(len(mp_manager_list)))
     strategy_class = args.get("strategy_class")
     timeframe = args.get("timeframe")
-    best = max(mp_manager_list, key = lambda x: calculate_fitness(x))
-    if best is not None:
-        print("Best test:\n{0}".format(str(best)))
+
+    # TODO read test results
+    job_index = args.get("job_index")
+    job_index.value = 0
+    # mp_manager_list = args.get("mp_manager_list")
+    # print("Current tests N: {0}".format(len(mp_manager_list)))
+    # best = max(mp_manager_list, key = lambda x: calculate_fitness(x))
+    # if best is not None:
+    #     print("Best test:\n{0}".format(str(best)))
+    # if num_evaluations > 0:
+    #     mp_manager_list[:] = []
+    #
     print("{0} on {1}".format(strategy_class, lib.get_flag_from_minutes(timeframe)))
     print('Generation {0}, {1} evaluations'.format(num_generations, num_evaluations))
     parameters = args.get("parameters")
@@ -94,7 +112,6 @@ def observer(population, num_generations, num_evaluations, args):
         if i < len(parameters) - 1:
             print(' | ', end = "")
     print(Fore.RESET)
-    mp_manager_list[:] = []
 
 
 def bounder(candidate, args):

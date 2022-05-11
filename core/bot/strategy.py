@@ -11,7 +11,7 @@ class Strategy(ABC):
     def __init__(self, wallet_handler: WalletHandler, max_positions: int):
         self.max_positions = max_positions
         self.open_positions = []
-        self.closed_positions = []
+        self.closed_positions: list[Position] = []
         self.__long_conditions = self.get_long_conditions()
         self.__short_conditions = self.get_short_conditions()
         self.__longest_period = 500

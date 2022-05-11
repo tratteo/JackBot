@@ -28,6 +28,10 @@ data1/
 analysisRes/
 genetic_data/
 MANIFEST
+.cache
+.Cache
+cache
+Cache
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

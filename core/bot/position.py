@@ -1,12 +1,11 @@
-import json
 from datetime import datetime
 from enum import unique, Enum
 
 
 @unique
-class PositionType(Enum):
-    LONG = 0,
-    SHORT = 1
+class PositionType(str, Enum):
+    LONG = "LONG",
+    SHORT = "SHORT"
 
 
 class Position:
@@ -22,10 +21,6 @@ class Position:
         self.stop_loss = stop_loss
         self.closed = False
         self.investment = investment
-
-    def to_json(self):
-        return json.dumps(self, default = lambda o: o.__dict__,
-                          sort_keys = True, indent = 4)
 
     def __str__(self):
         if self.closed:

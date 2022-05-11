@@ -66,7 +66,7 @@ def main(sync_manager: Manager):
     ec.terminator = [inspyred.ec.terminators.generation_termination, inspyred.ec.terminators.average_fitness_termination]
     ec.variator = [gaussian_adj_mutator, inspyred.ec.variators.uniform_crossover]
     ec.selector = inspyred.ec.selectors.tournament_selection
-    ec.replacer = inspyred.ec.replacers.truncation_replacement
+    ec.replacer = inspyred.ec.replacers.random_replacement
     ec.observer = observer
     # Evolve
     print("Starting evolution", flush = True)
@@ -78,19 +78,23 @@ def main(sync_manager: Manager):
         bounder = bounder,
         mp_evaluator = evaluator,
         mp_num_cpus = 4,
-        mp_manager_list = sync_manager.list([]),
+        # TODO add a method to append iterations test results
         # Variation
         mutation_rate = 0.2,
-        crossover_rate = 1,
+        crossover_rate = 0.75,
         # Selection
-        num_selected = 32,
+        num_selected = 64,
         tournament_size = 8,
         # Parameters
         maximize = True,
         pop_size = 64,
         max_generations = 150,
+        num_elites = 8,
         # Custom params
         datasets = datasets,
+        lock = sync_manager.Lock(),
+        job_index = sync_manager.Value("job_index", 0),
+        cache_path = ".cache/",
         dataset_epochs = 10,
         strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + data["strategy"]), data["strategy"]),
         timeframe = lib.get_minutes_from_flag(data["timeframe"]),
