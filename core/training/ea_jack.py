@@ -1,8 +1,6 @@
 import importlib
-import json
 import sys
 from multiprocessing import Manager
-from os import listdir
 from os.path import exists
 from random import Random
 from time import time
@@ -12,7 +10,19 @@ from numpy import genfromtxt
 
 import config
 from core.command_handler import CommandHandler
+from core.lib import ProgressBar
 from core.training.operators import *
+
+POP_SIZE = 32
+GENERATIONS = POP_SIZE * 2
+
+MUTATION_RATE = 0.25
+CROSSOVER_RATE = 0.75
+
+PROCESSES = 12
+
+# Number of generations to run on the same data set
+DATASET_EPOCH = 10
 
 
 def helper(helper_str: str):
@@ -68,6 +78,7 @@ def main(sync_manager: Manager):
     ec.selector = inspyred.ec.selectors.tournament_selection
     ec.replacer = inspyred.ec.replacers.random_replacement
     ec.observer = observer
+
     # Evolve
     print("Starting evolution", flush = True)
 
@@ -77,25 +88,26 @@ def main(sync_manager: Manager):
         generator = generator,
         bounder = bounder,
         mp_evaluator = evaluator,
-        mp_num_cpus = 4,
-        # TODO add a method to append iterations test results
-        # Variation
-        mutation_rate = 0.2,
-        crossover_rate = 0.75,
-        # Selection
-        num_selected = 64,
-        tournament_size = 8,
+        mp_num_cpus = PROCESSES,
         # Parameters
         maximize = True,
-        pop_size = 64,
-        max_generations = 150,
-        num_elites = 8,
+        pop_size = POP_SIZE,
+        max_generations = GENERATIONS,
+        # Variation
+        mutation_rate = MUTATION_RATE,
+        crossover_rate = CROSSOVER_RATE,
+        # Selection
+        num_selected = POP_SIZE,
+        tournament_size = int(4),
+        # Replacer
+        num_elites = int(POP_SIZE / 8),
         # Custom params
+        progress = ProgressBar(POP_SIZE),
         datasets = datasets,
         lock = sync_manager.Lock(),
         job_index = sync_manager.Value("job_index", 0),
         cache_path = ".cache/",
-        dataset_epochs = 10,
+        dataset_epochs = DATASET_EPOCH,
         strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + data["strategy"]), data["strategy"]),
         timeframe = lib.get_minutes_from_flag(data["timeframe"]),
         parameters = data["parameters"])

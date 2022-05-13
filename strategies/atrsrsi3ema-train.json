@@ -4,23 +4,23 @@
   "parameters": [
     {
       "name": "risk_reward_ratio",
-      "lower_bound": 0.5,
+      "lower_bound": 0.25,
       "upper_bound": 5
     },
     {
       "name": "atr_factor",
-      "lower_bound": 1,
-      "upper_bound": 7
+      "lower_bound": 0.5,
+      "upper_bound": 8
     },
     {
       "name": "investment_ratio",
       "lower_bound": 0.01,
-      "upper_bound": 0.2
+      "upper_bound": 0.15
     },
     {
       "name": "interval_tolerance",
       "lower_bound": 1,
-      "upper_bound": 10
+      "upper_bound": 12
     }
   ]
 }

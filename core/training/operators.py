@@ -1,4 +1,7 @@
+import json
 import math
+import os
+from os import listdir
 
 from colorama import Fore
 
@@ -11,9 +14,16 @@ from core.bot.wallet_handler import TestWallet
 def generator(random, args):
     """Generate the population"""
     parameters = args.get("parameters")
+    cache_path = args.get("cache_path")
+    onlyfiles = [f for f in listdir(cache_path) if f.endswith(".JSON") or f.endswith(".json")]
+    for f in onlyfiles:
+        os.remove(os.path.join(cache_path, f))
     genome = []
+    lib.create_folders_in_path(args.get("cache_path"))
+    lib.create_folders_in_path(args.get("cache_path") + "champion/")
     for b in parameters:
         genome.append(random.uniform(b["lower_bound"], b["upper_bound"]))
+    args.get("progress").render()
     return genome
 
 
@@ -23,12 +33,8 @@ def calculate_fitness(test_result: TestResult) -> float:
     b = 1
     c = 0.5
 
-    s = 0
-    for p in test_result.closed_positions:
-        s += p.result_percentage
-    s /= len(test_result.closed_positions)
     # print("S: {0}", s)
-    fitness = math.log(math.exp(a * test_result.win_ratio + b * test_result.total_profit) + c * len(test_result.closed_positions))
+    fitness = math.log(math.exp(a * test_result.win_ratio + b * test_result.average_result_percentage) + c * test_result.closed_positions)
     return fitness
 
 
@@ -39,6 +45,7 @@ def evaluator(candidates, args):
     num_generations = args.get("num_generations")
     if num_generations is None:
         num_generations = 0
+
     cache_path = args.get("cache_path")
     parameters = args.get("parameters")
     dataset_epochs = args.get("dataset_epochs")
@@ -48,23 +55,29 @@ def evaluator(candidates, args):
     timeframe = args.get("timeframe")
     strategy_class = args.get("strategy_class")
     job_index = args.get("job_index")
-
+    lock = args.get("lock")
+    progress = args.get("progress")
+    # Safe since the evaluation is parallel
     for i, c in enumerate(candidates):
         strategy = strategy_class(TestWallet.factory(initial_balance), **dict([(p[1]["name"], p[0]) for p in zip(c, parameters)]))
         result, _, _ = dataset_evaluator.evaluate(strategy, initial_balance, evaluate_data, timeframe = timeframe)
-        if result is None:
-            fitnesses.append(0)
-            continue
-        fit = calculate_fitness(result)
+        fit = 0 if result is None else calculate_fitness(result)
         fitnesses.append(fit)
-        # TODO append test results
-        # mp_manager_list.append(result)
+        lock.acquire()
         path = cache_path + str(job_index.value) + ".json"
-        lib.create_folders_in_path(path)
-        with open(path, "w") as file:
-            # Writing data to a file
-            file.write(result.to_json())
-        job_index.value += 1
+        try:
+            with open(path, "w") as file:
+                # Writing data to a file
+                dic = result.get_dic()
+                dic["fitness"] = fit
+                dic["index"] = job_index.value
+                dic["genome"] = dict([(p[1]["name"], p[0]) for p in zip(c, parameters)])
+                file.write(json.dumps(dic, default = lambda x: None, indent = 4))
+        finally:
+            # print("Worker {0} completed".format(job_index.value), end = "\r")
+            job_index.value += 1
+            progress.set_step(job_index.value)
+            lock.release()
     return fitnesses
 
 
@@ -90,28 +103,33 @@ def observer(population, num_generations, num_evaluations, args):
     print("\nCurrent pop N: {0}".format(len(population)))
     strategy_class = args.get("strategy_class")
     timeframe = args.get("timeframe")
-
-    # TODO read test results
+    cache_path = args.get("cache_path")
     job_index = args.get("job_index")
-    job_index.value = 0
-    # mp_manager_list = args.get("mp_manager_list")
-    # print("Current tests N: {0}".format(len(mp_manager_list)))
-    # best = max(mp_manager_list, key = lambda x: calculate_fitness(x))
-    # if best is not None:
-    #     print("Best test:\n{0}".format(str(best)))
-    # if num_evaluations > 0:
-    #     mp_manager_list[:] = []
-    #
+    lock = args.get("lock")
+    progress = args.get("progress")
+    progress.dispose()
+    results = []
+    onlyfiles = [f for f in listdir(cache_path) if f.endswith(".JSON") or f.endswith(".json")]
+    lock.acquire()
+    for f in onlyfiles:
+        path = cache_path + f
+        with open(path, "r") as file:
+            x = json.loads(file.read())
+            results.append(x)
+    lock.release()
     print("{0} on {1}".format(strategy_class, lib.get_flag_from_minutes(timeframe)))
     print('Generation {0}, {1} evaluations'.format(num_generations, num_evaluations))
-    parameters = args.get("parameters")
-    zipped = zip(population[0].candidate, parameters)
-    print('Champion: {0}'.format(population[0].fitness))
-    for i, z in enumerate(zipped):
-        print('{0}[{1}: {2:.2F}]'.format(Fore.GREEN, z[1]["name"], z[0]), end = "")
-        if i < len(parameters) - 1:
-            print(' | ', end = "")
+
+    print("Evaluating {0} test results".format(len(results)))
+    results.sort(key = lambda elem: float(elem["fitness"]), reverse = True)
+    champion = json.dumps(results[0], indent = 4)
+    print('{0}Champion: \n{1}'.format(Fore.GREEN, champion))
+    with open(cache_path + "champion/champion.json", "w") as file:
+        file.write(champion)
+    job_index.value = 0
     print(Fore.RESET)
+    print("\nStarting generation {0}".format(num_generations + 1))
+    progress.render()
 
 
 def bounder(candidate, args):

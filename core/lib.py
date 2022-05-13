@@ -1,5 +1,4 @@
 import os
-import sys
 from typing import Callable
 
 
@@ -91,6 +90,7 @@ class ProgressBar:
         self.style_edges = ("|", "|")
         self.style_fill = "█"
         self.show_percentage = True
+        self.last_msg_len = 1
 
     def reset(self):
         self.current_length = 0
@@ -99,15 +99,29 @@ class ProgressBar:
         self.render()
 
     def render(self):
+        print("\r" * self.last_msg_len, end = "")
         if self.show_percentage:
-            sys.stdout.write("{0:}{1:}{2:} {3:.2f}%\r".format(self.style_edges[0], self.style_fill * self.current_length + " " * (self.width - self.current_length), self.style_edges[1],
-                                                              float(self.percentage * 100)))
+            msg = "{0:}{1:}{2:} {3:.2f}%"
+            print(msg.format(self.style_edges[0], self.style_fill * self.current_length + " " * (self.width - self.current_length), self.style_edges[1], float(self.percentage * 100)), end = "")
         else:
-            sys.stdout.write("{0:}{1:}{2:}\r".format(self.style_edges[0], self.style_fill * self.current_length + " " * (self.width - self.current_length), self.style_edges[1]))
-        sys.stdout.flush()
+            msg = "{0:}{1:}{2:}"
+            print(msg.format(self.style_edges[0], self.style_fill * self.current_length + " " * (self.width - self.current_length), self.style_edges[1]), end = "")
+        self.last_msg_len = len(msg)
+        self.flush()
 
     def step(self, progress: float):
         self.current_step += progress
+        # print(str(progress) + ", " + str(self.current_step))
+        if self.current_step > self.total_steps: self.current_step = self.total_steps
+        self.percentage = self.current_step / self.total_steps
+        self.current_length = int(self.percentage * self.width)
+        self.render()
+
+    def flush(self):
+        print("", end = "", flush = True)
+
+    def set_step(self, value: float):
+        self.current_step = value
         # print(str(progress) + ", " + str(self.current_step))
         if self.current_step > self.total_steps: self.current_step = self.total_steps
         self.percentage = self.current_step / self.total_steps
