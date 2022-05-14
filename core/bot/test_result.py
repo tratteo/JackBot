@@ -14,6 +14,7 @@ class TestResult:
         self.win_ratio = 0
         self.estimated_apy = 0
         self.average_result_percentage = 0
+        self.result_percentage = 0
         self.opened_positions = 0
         self.closed_positions = 0
         self.populate(strategy, initial_balance, minute_candles, time_frame_minutes)
@@ -29,6 +30,7 @@ class TestResult:
         self.average_result_percentage = 0
         for c in strategy.closed_positions:
             self.total_profit += c.profit
+            self.result_percentage += c.result_percentage
             self.average_result_percentage += c.result_percentage
             if c.won:
                 won += 1

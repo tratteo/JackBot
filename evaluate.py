@@ -53,7 +53,7 @@ out = command_manager.get_k("-o")
 # Instantiate the strategy
 strategy_name = options_file["strategy"]
 strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)
-strategy = strategy_class(TestWallet.factory(initial_balance), **dict([(p["name"], p["_value"]) for p in options_file["parameters"]]))
+strategy = strategy_class(TestWallet.factory(initial_balance), **dict([(p["name"], p["value"]) for p in options_file["parameters"]]))
 
 # Load data
 print("Loading " + dataset + "...")
@@ -75,12 +75,10 @@ if out is not None:
 # Plot data
 if plot_arg is not None:
     balance = strategy.wallet_handler.balance_trend
-    balance_ema = talib.MA(np.array(balance), timeperiod = 20)
     balance_min, balance_max = min(balance), max(balance)
     balance_len = len(balance)
     plot.figure(num = strategy_name)
     plot.plot(balance, label = "Balance")
-    plot.plot(balance_ema, label = "MA")
     plot.title(strategy_name + " on " + dataset)
     plot.ylabel("Balance")
     plot.xlabel(plot_arg)
