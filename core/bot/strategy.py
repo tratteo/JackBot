@@ -2,6 +2,7 @@ from abc import abstractmethod, ABC
 from typing import List
 
 from core.bot.condition import StrategyCondition
+from core.bot.middleware.data_frame import DataFrame
 from core.bot.position import PositionType, Position
 from core.bot.wallet_handler import WalletHandler, TestWallet
 
@@ -23,7 +24,7 @@ class Strategy(ABC):
         pass
 
     @abstractmethod
-    def compute_indicators_step(self, frame):
+    def compute_indicators_step(self, frame: DataFrame):
         pass
 
     @abstractmethod
@@ -54,9 +55,8 @@ class Strategy(ABC):
         for c in conditions:
             c.reset()
 
-    def update_state(self, message, verbose: bool = False):
-        frame = message["k"]
-        close_price = float(frame["c"])
+    def update_state(self, frame: DataFrame, verbose: bool = False):
+        close_price = float(frame.close_price)
 
         to_remove = []
         for pos in self.open_positions:
@@ -74,7 +74,7 @@ class Strategy(ABC):
         for rem in to_remove:
             self.open_positions.remove(rem)
 
-        if frame["x"]:
+        if frame.is_closed:
 
             self.compute_indicators_step(frame)
             # Tick all conditions so they can update their internal state
@@ -87,7 +87,8 @@ class Strategy(ABC):
             if len(self.open_positions) < self.max_positions and self.wallet_handler.get_balance() > 0:
                 if self.__check_conditions(self.__long_conditions):
                     investment = self.get_margin_investment()
-                    pos = Position(PositionType.LONG, frame["t"], close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG), investment)
+                    pos = Position(PositionType.LONG, frame.start_time, close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG),
+                                   investment)
                     if isinstance(self.wallet_handler, TestWallet):
                         self.wallet_handler.balance -= investment
                     pos.open(self.wallet_handler)
@@ -97,7 +98,8 @@ class Strategy(ABC):
 
                 if self.__check_conditions(self.__short_conditions):
                     investment = self.get_margin_investment()
-                    pos = Position(PositionType.SHORT, frame["t"], close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT), investment)
+                    pos = Position(PositionType.SHORT, frame.start_time, close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT),
+                                   investment)
                     if isinstance(self.wallet_handler, TestWallet):
                         self.wallet_handler.balance -= investment
                     pos.open(self.wallet_handler)

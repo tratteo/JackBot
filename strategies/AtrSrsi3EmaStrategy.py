@@ -42,10 +42,10 @@ class AtrSrsi3EmaStrategy(Strategy):
         self.current_atr = np.nan
         super().__init__(wallet_handler, self.MAX_OPEN_POSITIONS_NUMBER)
 
-    def compute_indicators_step(self, frame):
-        close = float(frame["c"])
-        high = float(frame["h"])
-        low = float(frame["l"])
+    def compute_indicators_step(self, frame: DataFrame):
+        close = frame.close_price
+        high = frame.high_price
+        low = frame.low_price
         self.current_ema8 = self.ema8.compute_next(close)
         self.current_ema14 = self.ema14.compute_next(close)
         self.current_ema50 = self.ema50.compute_next(close)
@@ -81,20 +81,20 @@ class AtrSrsi3EmaStrategy(Strategy):
             EventStrategyCondition(self.short_event_condition, self.interval_tolerance)
         ]
 
-    def long_perpetual_condition(self, frame) -> bool:
-        close = float(frame["c"])
+    def long_perpetual_condition(self, frame: DataFrame) -> bool:
+        close = frame.close_price
         if self.current_ema8 is np.nan or self.current_ema14 is np.nan or self.current_ema50 is np.nan: return False
         return self.current_ema50 < self.current_ema14 < self.current_ema8 < close
 
-    def long_event_condition(self, frame) -> bool:
+    def long_event_condition(self, frame: DataFrame) -> bool:
         if self.last_k is np.nan or self.current_k is np.nan or self.last_d is np.nan or self.current_d is np.nan: return False
         return self.last_k <= self.last_d and self.current_k > self.current_d
 
-    def short_perpetual_condition(self, frame) -> bool:
-        close = float(frame["c"])
+    def short_perpetual_condition(self, frame: DataFrame) -> bool:
+        close = frame.close_price
         if self.current_ema8 is np.nan or self.current_ema14 is np.nan or self.current_ema50 is np.nan: return False
         return self.current_ema50 > self.current_ema14 > self.current_ema8 > close
 
-    def short_event_condition(self, frame) -> bool:
+    def short_event_condition(self, frame: DataFrame) -> bool:
         if self.last_k is np.nan or self.current_k is np.nan or self.last_d is np.nan or self.current_d is np.nan: return False
         return self.last_k >= self.last_d and self.current_k < self.current_d
