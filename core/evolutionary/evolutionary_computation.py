@@ -9,6 +9,7 @@ from numpy import genfromtxt
 
 import config
 from core.evolutionary.operators import *
+from core.utils.lib import ProgressBar
 
 
 def evolve_parallel(parameters_json, dataset_path, **kwargs) -> Individual:
@@ -24,14 +25,14 @@ def evolve_parallel(parameters_json, dataset_path, **kwargs) -> Individual:
     onlyfiles = [f for f in listdir(dataset_path) if f.endswith(".CSV") or f.endswith(".csv")]
     print("Found {0} files in {1}".format(len(onlyfiles), dataset_path))
     datasets = []
-    progresses = []
+    total_length = 0
     for f in onlyfiles:
         # datasets.append(genfromtxt(dataset_path + "//" + f, delimiter = config.DEFAULT_DELIMITER))
         print("Loading {0}...".format(f), flush = True)
         data = genfromtxt(dataset_path + "//" + f, delimiter = config.DEFAULT_DELIMITER)
         datasets.append(data)
-        progresses.append(ProgressBar.create(pop_size * len(data)).width(50).build())
-
+        total_length += len(data)
+    unique_progress = ProgressBar.create(total_length * pop_size).width(100).build()
     # Create EA
     ec = inspyred.ec.EvolutionaryComputation(rand)
     ec.terminator = [inspyred.ec.terminators.generation_termination, inspyred.ec.terminators.average_fitness_termination]
@@ -64,13 +65,12 @@ def evolve_parallel(parameters_json, dataset_path, **kwargs) -> Individual:
             # Replacer
             num_elites = int(pop_size / 8),
             # Synchronization
-            current_generation = sync_manager.Value("current_generation", 0),
             iteration_progress = sync_manager.Value("iteration_progress", 0),
             job_index = sync_manager.Value("job_index", 0),
             lock = sync_manager.Lock(),
             # Data and reports
             datasets = datasets,
-            progresses = progresses,
+            unique_progress = unique_progress,
             cache_path = ".cache/",
             dataset_epochs = dataset_epochs,
             # Strategy

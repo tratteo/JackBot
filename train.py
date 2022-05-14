@@ -2,8 +2,8 @@ import json
 import sys
 from os.path import exists
 
-from core.command_handler import CommandHandler
 from core.evolutionary import evolutionary_computation
+from core.utils.command_handler import CommandHandler
 
 
 def helper(helper_str: str):
@@ -45,4 +45,4 @@ if __name__ == '__main__':
                                                      mutation_rate = 0.25,
                                                      crossover_rate = 0.8,
                                                      processes = 8,
-                                                     dataset_epochs = 5)
+                                                     dataset_epochs = 3)

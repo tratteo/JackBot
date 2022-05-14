@@ -1,5 +1,6 @@
 import threading
 import time
+
 from core.bot.middleware.data_frame import DataFrame
 from core.bot.middleware.middleware import MiddleWare
 
@@ -14,7 +15,7 @@ class KucoinMiddleWare(MiddleWare):
         self.passed_frame = DataFrame()
         self.unsubscribe = True
         self.kucoin_data = KucoinData('key', 'secret', 'apiName')  # insert key to subscribe
-        threading.Thread(target=self.subscribe).start()
+        threading.Thread(target = self.subscribe).start()
 
     def subscribe(self):
         while self.unsubscribe:

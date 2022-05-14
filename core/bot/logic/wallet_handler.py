@@ -16,16 +16,8 @@ class TestWallet(WalletHandler):
 
     def __init__(self, initial_balance: float):
         super().__init__()
-        self.__balance = initial_balance
-        self.balance_trend = [initial_balance]
-
-    @property
-    def balance(self):
-        return self.__balance
+        self.balance = initial_balance
+        self.total_balance = initial_balance
 
     def get_balance(self) -> float:
-        return self.balance
-
-    @balance.setter
-    def balance(self, value: float):
-        self.__balance = value
+        return self.total_balance

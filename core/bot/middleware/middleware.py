@@ -1,8 +1,8 @@
 from abc import abstractmethod, ABC
 
 from core.bot.middleware.binance_middleware import BinanceMiddleWare
-from core.bot.middleware.kucoin_middleware import KucoinMiddleWare
 from core.bot.middleware.data_frame import DataFrame
+from core.bot.middleware.kucoin_middleware import KucoinMiddleWare
 
 
 class MiddleWare(ABC):

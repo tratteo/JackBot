@@ -1,4 +1,5 @@
 from binance import ThreadedWebsocketManager
+
 from core.bot.middleware.data_frame import DataFrame
 from core.bot.middleware.middleware import MiddleWare
 
@@ -6,11 +7,11 @@ from core.bot.middleware.middleware import MiddleWare
 class BinanceMiddleWare(MiddleWare):
     def __init__(self, callback, symbol, granularity):
         super().__init__(callback, symbol, granularity)
-        #insert key
-        self.twm = ThreadedWebsocketManager(api_key=config.API_KEY, api_secret=config.API_SECRET)
+        # insert key
+        self.twm = ThreadedWebsocketManager(api_key = config.API_KEY, api_secret = config.API_SECRET)
 
         self.twm.start()
-        self.twm.start_kline_socket(callback=self.update, symbol=self.symbol)
+        self.twm.start_kline_socket(callback = self.update, symbol = self.symbol)
 
     def convert(self, message) -> DataFrame:
         frame = DataFrame()

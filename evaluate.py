@@ -7,11 +7,11 @@ import numpy as np
 from numpy import genfromtxt
 
 import config
-from core import lib
-from core.bot import dataset_evaluator
-from core.bot.wallet_handler import TestWallet
-from core.command_handler import CommandHandler
-from core.lib import ProgressBar
+from core.bot.evaluation import dataset_evaluator
+from core.bot.logic.wallet_handler import TestWallet
+from core.utils import lib
+from core.utils.command_handler import CommandHandler
+from core.utils.lib import ProgressBar
 
 
 def helper(helper_str: str):
@@ -41,11 +41,13 @@ with open(command_manager.get_p(0)) as file:
 # Get args
 initial_balance = 1000
 arg = command_manager.get_k("-ib")
-if arg is not None: initial_balance = int(arg)
+if arg is not None:
+    initial_balance = int(arg)
 
 plot_arg = lib.get_minutes_from_flag(command_manager.get_k("-p"))
 balance_plot_interval = plot_arg
-if balance_plot_interval is None: balance_plot_interval = 1440
+if balance_plot_interval is None:
+    balance_plot_interval = 1440
 
 dataset = command_manager.get_p(1)
 timeframe = lib.get_minutes_from_flag(options_file["timeframe"])
@@ -53,7 +55,7 @@ out = command_manager.get_k("-o")
 # Instantiate the strategy
 strategy_name = options_file["strategy"]
 strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)
-strategy = strategy_class(TestWallet.factory(initial_balance), **dict([(p["name"], p["value"]) for p in options_file["parameters"]]))
+strategy = strategy_class(TestWallet.factory(initial_balance), **options_file["genome"])
 
 # Load data
 print("Loading " + dataset + "...")
@@ -64,7 +66,7 @@ print("Evaluating " + strategy_name + " on " + dataset + " | " + str(options_fil
 progress_bar = ProgressBar.create(len(data)).width(50).build()
 res, balance, index = dataset_evaluator.evaluate(strategy, initial_balance, data, progress_delegate = progress_bar.step, balance_update_interval = balance_plot_interval, timeframe = timeframe)
 progress_bar.dispose()
-print(str(res))
+print("\nEvaluation result:\n{0}".format(str(res)))
 
 # Print to file
 if out is not None:
@@ -74,7 +76,6 @@ if out is not None:
 
 # Plot data
 if plot_arg is not None:
-    balance = strategy.wallet_handler.balance_trend
     balance_min, balance_max = min(balance), max(balance)
     balance_len = len(balance)
     plot.figure(num = strategy_name)

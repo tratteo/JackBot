@@ -1,9 +1,9 @@
 import json
 
-from core.bot.strategy import Strategy
+from core.bot.logic.strategy import Strategy
 
 
-class TestResult:
+class EvaluationResult:
     def __init__(self, strategy: Strategy, initial_balance: float, minute_candles: int, time_frame_minutes: int):
         self.days = 0
         self.minutes = 0
@@ -31,11 +31,10 @@ class TestResult:
         for c in strategy.closed_positions:
             self.total_profit += c.profit
             self.result_percentage += c.result_percentage
-            self.average_result_percentage += c.result_percentage
             if c.won:
                 won += 1
 
-        self.average_result_percentage /= len(strategy.closed_positions)
+        self.average_result_percentage = self.result_percentage / len(strategy.closed_positions)
         self.final_balance = self.initial_balance + self.total_profit
         if len(strategy.closed_positions) > 0:
             self.win_ratio = won / len(strategy.closed_positions)
@@ -43,9 +42,5 @@ class TestResult:
         self.estimated_apy = (((self.final_balance / self.initial_balance) ** (365 / self.days)) - 1) * 100
         self.opened_positions = len(strategy.open_positions) + len(strategy.closed_positions)
 
-    def get_dic(self):
-        dic = vars(self)
-        return dic
-
     def __str__(self):
-        return json.dumps(self.get_dic(), indent = 4)
+        return json.dumps(vars(self), indent = 4)

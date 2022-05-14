@@ -1,10 +1,10 @@
 from abc import abstractmethod, ABC
 from typing import List
 
-from core.bot.condition import StrategyCondition
+from core.bot.logic.condition import StrategyCondition
+from core.bot.logic.position import PositionType, Position
+from core.bot.logic.wallet_handler import WalletHandler, TestWallet
 from core.bot.middleware.data_frame import DataFrame
-from core.bot.position import PositionType, Position
-from core.bot.wallet_handler import WalletHandler, TestWallet
 
 
 class Strategy(ABC):
@@ -17,7 +17,6 @@ class Strategy(ABC):
         self.__short_conditions = self.get_short_conditions()
         self.__longest_period = 500
         self.wallet_handler = wallet_handler
-        self.balance_trend = []
 
     @abstractmethod
     def get_stop_loss(self, open_price: float, position_type: PositionType) -> float:
@@ -65,10 +64,11 @@ class Strategy(ABC):
                 pos.close(won, close_price, self.wallet_handler)
                 if isinstance(self.wallet_handler, TestWallet):
                     self.wallet_handler.balance += pos.profit + pos.investment
-                    self.wallet_handler.balance_trend.append(self.wallet_handler.balance_trend[-1] + pos.profit)
+                    self.wallet_handler.total_balance += pos.profit
                 to_remove.append(pos)
                 self.closed_positions.append(pos)
-                if verbose: print("Closed position: " + str(pos))
+                if verbose:
+                    print("Closed position: " + str(pos))
 
         # Remove all the closed positions
         for rem in to_remove:
@@ -93,7 +93,8 @@ class Strategy(ABC):
                         self.wallet_handler.balance -= investment
                     pos.open(self.wallet_handler)
                     self.open_positions.append(pos)
-                    if verbose: print("\nOpened position: " + str(pos))
+                    if verbose:
+                        print("\nOpened position: " + str(pos))
                     self.__reset_conditions(self.__long_conditions)
 
                 if self.__check_conditions(self.__short_conditions):
@@ -104,5 +105,6 @@ class Strategy(ABC):
                         self.wallet_handler.balance -= investment
                     pos.open(self.wallet_handler)
                     self.open_positions.append(pos)
-                    if verbose: print("\nOpened position: " + str(pos))
+                    if verbose:
+                        print("\nOpened position: " + str(pos))
                     self.__reset_conditions(self.__short_conditions)

@@ -1,5 +1,8 @@
+import json
 from datetime import datetime
 from enum import unique, Enum
+
+from core.bot.logic.wallet_handler import WalletHandler
 
 
 @unique
@@ -10,7 +13,7 @@ class PositionType(str, Enum):
 
 class Position:
 
-    def __init__(self, pos_type: PositionType, open_date: datetime.date, open_price: float, take_profit: float, stop_loss: float, investment: float, ):
+    def __init__(self, pos_type: PositionType, open_date: datetime.date, open_price: float, take_profit: float, stop_loss: float, investment: float):
         self.result_percentage = 0
         self.pos_type = pos_type
         self.won = False
@@ -23,26 +26,7 @@ class Position:
         self.investment = investment
 
     def __str__(self):
-        if self.closed:
-            return "Open time: " + "{:2.0f}".format(self.open_date) + \
-                   ", investment: " + "{:2.3f}".format(self.investment) + \
-                   ", entry price: " + "{:2.3f}".format(self.open_price) + \
-                   ", TP: " + "{:2.3f}".format(self.take_profit) + \
-                   ", SL: " + "{:2.3f}".format(self.stop_loss) + \
-                   ", type: " + str(self.pos_type) + \
-                   ", closed: " + str(self.closed) + \
-                   ", won: " + str(self.won) + \
-                   ", result percentage: " + "{:2.3f}".format(self.result_percentage) + \
-                   ", profit: " + "{:2.3f}".format(self.profit)
-
-        else:
-            return "Open time: " + "{:2.0f}".format(self.open_date) + \
-                   ", investment: " + "{:2.3f}".format(self.investment) + \
-                   ", entry price: " + "{:2.3f}".format(self.open_price) + \
-                   ", TP: " + "{:2.3f}".format(self.take_profit) + \
-                   ", SL: " + "{:2.3f}".format(self.stop_loss) + \
-                   ", type: " + str(self.pos_type) + \
-                   ", closed: " + str(self.closed)
+        return json.dumps(vars(self), indent = 4)
 
     def should_close(self, current_price: float) -> [bool, bool]:
         if self.pos_type == PositionType.LONG:
@@ -65,12 +49,12 @@ class Position:
 
         return False, False
 
-    def open(self, wallet_handler):
+    def open(self, wallet_handler: WalletHandler):
         # print("Order opened: ")
         # print("Symbol: " + self.order_info["symbol"] + "\n executed. Quantity " + self.order_info["executedQty"])
         pass
 
-    def close(self, won: bool, close_price: float, wallet_handler):
+    def close(self, won: bool, close_price: float, wallet_handler: WalletHandler):
         self.won = won
         self.closed = True
         if self.pos_type == PositionType.LONG:

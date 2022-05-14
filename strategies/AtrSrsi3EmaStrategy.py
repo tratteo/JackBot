@@ -1,7 +1,7 @@
 import numpy as np
 
-from core.bot.condition import PerpetualStrategyCondition, EventStrategyCondition
-from core.bot.strategy import *
+from core.bot.logic.condition import PerpetualStrategyCondition, EventStrategyCondition
+from core.bot.logic.strategy import *
 from indicators.ATR import ATR
 from indicators.EMA import EMA
 from indicators.STOCHRSI import STOCHRSI
@@ -11,26 +11,32 @@ class AtrSrsi3EmaStrategy(Strategy):
     """
     Simple AtrSrsi3EmaStrategy
 
-    Parameters (4):
+    Parameters (7):
         risk_reward_ratio\n
         atr_factor\n
         investment_ratio\n
-        interval_tolerance
+        interval_tolerance\n
+        first_ema_period\n
+        second_ema_period\n
+        third_ema_period
     """
 
-    MAX_OPEN_POSITIONS_NUMBER = 3
+    MAX_OPEN_POSITIONS_NUMBER = 2
 
     def __init__(self, wallet_handler: WalletHandler, **strategy_params):
         self.risk_reward_ratio = strategy_params["risk_reward_ratio"]
         self.atr_factor = strategy_params["atr_factor"]
         self.investment_rate = strategy_params["investment_ratio"]
         self.interval_tolerance = strategy_params["interval_tolerance"]
+        self.first_ema_period = strategy_params["first_ema_period"]
+        self.second_ema_period = strategy_params["second_ema_period"]
+        self.third_ema_period = strategy_params["third_ema_period"]
 
-        self.ema8 = EMA(period = 8)
+        self.ema8 = EMA(period = round(self.first_ema_period))
         self.current_ema8 = np.nan
-        self.ema14 = EMA(period = 14)
+        self.ema14 = EMA(period = round(self.second_ema_period))
         self.current_ema14 = np.nan
-        self.ema50 = EMA(period = 50)
+        self.ema50 = EMA(period = round(self.third_ema_period))
         self.current_ema50 = np.nan
 
         self.stoch_rsi = STOCHRSI()
