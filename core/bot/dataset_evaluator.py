@@ -36,9 +36,10 @@ frame_message = {
 }
 
 
-def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_delegate = None, balance_update_interval: int = 1440, timeframe: int = 3, index: int = 0) -> [TestResult,
-                                                                                                                                                                                     list[float],
-                                                                                                                                                                                     int]:
+def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_delegate = None, balance_update_interval: int = 1440, timeframe: int = 3, index: int = 0) -> [
+    TestResult,
+    list[float],
+    int]:
     epoch = 0
     high = data[epoch, HIGH]
     low = data[epoch, LOW]
@@ -79,7 +80,8 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
                 start_time = data[epoch + 1, 0]
             if epoch % balance_update_interval == 0: balance_trend.append(strategy.wallet_handler.get_balance())
             strategy.update_state(frame_message)
-            if epoch % progress_reporter_span == 0 and progress_delegate is not None: progress_delegate(progress_reporter_span)
+            if epoch % progress_reporter_span == 0 and progress_delegate is not None:
+                progress_delegate(progress_reporter_span)
             epoch += 1
     except (KeyboardInterrupt, SystemExit):
         print("\nWorker " + str(index) + " interrupted", flush = True)

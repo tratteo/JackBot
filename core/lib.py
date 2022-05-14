@@ -82,6 +82,8 @@ def try_get_json_attr(key: str, json_obj):
 class ProgressBar:
 
     def __init__(self, total_steps: int):
+        # self.sync_manager = Manager()
+        # self.lock = self.sync_manager.Lock()
         self.current_length = 0
         self.total_steps = total_steps
         self.current_step = 0
@@ -110,22 +112,26 @@ class ProgressBar:
         self.flush()
 
     def step(self, progress: float):
+        # self.lock.acquire()
         self.current_step += progress
         # print(str(progress) + ", " + str(self.current_step))
         if self.current_step > self.total_steps: self.current_step = self.total_steps
         self.percentage = self.current_step / self.total_steps
         self.current_length = int(self.percentage * self.width)
+        # self.lock.release()
         self.render()
 
     def flush(self):
         print("", end = "", flush = True)
 
     def set_step(self, value: float):
+        # self.lock.acquire()
         self.current_step = value
         # print(str(progress) + ", " + str(self.current_step))
         if self.current_step > self.total_steps: self.current_step = self.total_steps
         self.percentage = self.current_step / self.total_steps
         self.current_length = int(self.percentage * self.width)
+        # self.lock.release()
         self.render()
 
     def dispose(self):
