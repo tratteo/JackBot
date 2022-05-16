@@ -69,6 +69,7 @@ def evaluate_single(args, data, c) -> EvaluationResult:
     strategy = strategy_class(TestWallet.factory(initial_balance), **params)
     result, _, _ = dataset_evaluator.evaluate(strategy, initial_balance, data,
                                               timeframe = timeframe,
+                                              progress_reporter_span = 8640,
                                               progress_delegate = lambda val: iteration_report(val, unique_progress, iteration_progress, lock))
     return result
 

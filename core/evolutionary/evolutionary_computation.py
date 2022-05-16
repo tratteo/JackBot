@@ -18,7 +18,6 @@ def evolve_parallel(parameters_json, dataset_path, **kwargs) -> Individual:
     mutation_rate = float(kwargs.get("mutation_rate"))
     crossover_rate = float(kwargs.get("crossover_rate"))
     processes = int(kwargs.get("processes"))
-    dataset_epochs = int(kwargs.get("dataset_epochs"))
 
     rand = Random()
     rand.seed(int(time()))
@@ -72,7 +71,6 @@ def evolve_parallel(parameters_json, dataset_path, **kwargs) -> Individual:
             datasets = datasets,
             unique_progress = unique_progress,
             cache_path = ".cache/",
-            dataset_epochs = dataset_epochs,
             # Strategy
             strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + parameters_json["strategy"]), parameters_json["strategy"]),
             timeframe = lib.get_minutes_from_flag(parameters_json["timeframe"]),

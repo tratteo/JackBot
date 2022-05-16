@@ -40,9 +40,8 @@ if __name__ == '__main__':
     dataset_path = command_manager.get_p(1)
 
     champ = evolutionary_computation.evolve_parallel(parameters_json, dataset_path,
-                                                     pop_size = 24,
-                                                     generations = 200,
+                                                     pop_size = 32,
+                                                     generations = 100,
                                                      mutation_rate = 0.25,
                                                      crossover_rate = 0.8,
-                                                     processes = 8,
-                                                     dataset_epochs = 3)
+                                                     processes = 8)

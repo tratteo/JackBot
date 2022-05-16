@@ -24,7 +24,9 @@ class STOCH:
         min_val = np.min(self.low)
         max_val = np.max(self.high)
         # print("close ", self.close[-1], "min ", min_val, "max ", max_val)
-        self.stoch.append((((self.close[-1] - min_val) / (max_val - min_val)) * 100))
+        diff = (max_val - min_val)
+        diff = 1 if diff == 0 else diff
+        self.stoch.append((((self.close[-1] - min_val) / diff) * 100))
 
         if len(self.stoch) == self.fastk_period:
 

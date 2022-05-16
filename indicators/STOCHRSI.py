@@ -22,7 +22,9 @@ class STOCHRSI:
 
         min_val = np.min(self.values)
         max_val = np.max(self.values)
-        fast_k = (((current - min_val) / (max_val - min_val)) * 100)
+        diff = (max_val - min_val)
+        diff = 1 if diff == 0 else diff
+        fast_k = (((current - min_val) / diff) * 100)
         fast_d = self.stoch.compute_next(current, current, current)[0]
 
         if np.isnan(fast_d):

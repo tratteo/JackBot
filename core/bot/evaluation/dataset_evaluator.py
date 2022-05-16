@@ -12,8 +12,9 @@ CLOSE: int = 4
 CLOSE_T: int = 6
 
 
-def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_delegate = None, balance_update_interval: int = 1440, timeframe: int = 3, index: int = 0) -> [EvaluationResult,
-                                                                                                                                                                                     list[float], int]:
+def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_delegate = None, balance_update_interval: int = 1440, progress_reporter_span: int = 1440, timeframe: int = 3,
+             index: int = 0) -> [EvaluationResult,
+                                 list[float], int]:
     """Evaluate the strategy in a dataset
       Returns:
         tuple[evaluation_result, balance_trend, worker_index]
@@ -32,7 +33,6 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
         return None, balance_trend, index
 
     # Report progress each month
-    progress_reporter_span = 1440 * 30
     try:
         while epoch < time_span:
             if epoch + 1 >= len(data):
@@ -65,7 +65,7 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
                 balance_trend.append(strategy.wallet_handler.total_balance)
 
             strategy.update_state(frame)
-            if epoch % progress_reporter_span == 0 and progress_delegate is not None:
+            if epoch != 0 and epoch % progress_reporter_span == 0 and progress_delegate is not None:
                 progress_delegate(progress_reporter_span)
 
             epoch += 1
