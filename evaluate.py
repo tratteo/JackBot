@@ -55,7 +55,7 @@ out = command_manager.get_k("-o")
 # Instantiate the strategy
 strategy_name = options_file["strategy"]
 strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)
-strategy = strategy_class(TestWallet.factory(initial_balance), **options_file["genome"])
+strategy = strategy_class(TestWallet.factory(initial_balance), options_file["genome"], **options_file["parameters"])
 
 # Load data
 print("Loading " + dataset + "...")

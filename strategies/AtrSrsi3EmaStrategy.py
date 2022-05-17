@@ -21,16 +21,14 @@ class AtrSrsi3EmaStrategy(Strategy):
         third_ema_period
     """
 
-    MAX_OPEN_POSITIONS_NUMBER = 2
-
-    def __init__(self, wallet_handler: WalletHandler, **strategy_params):
-        self.risk_reward_ratio = strategy_params["risk_reward_ratio"]
-        self.atr_factor = strategy_params["atr_factor"]
-        self.investment_rate = strategy_params["investment_ratio"]
-        self.interval_tolerance = strategy_params["interval_tolerance"]
-        self.first_ema_period = strategy_params["first_ema_period"]
-        self.second_ema_period = strategy_params["second_ema_period"]
-        self.third_ema_period = strategy_params["third_ema_period"]
+    def __init__(self, wallet_handler: WalletHandler, genome: dict, **strategy_params):
+        self.risk_reward_ratio = genome["risk_reward_ratio"]
+        self.atr_factor = genome["atr_factor"]
+        self.investment_rate = genome["investment_ratio"]
+        self.interval_tolerance = genome["interval_tolerance"]
+        self.first_ema_period = genome["first_ema_period"]
+        self.second_ema_period = genome["second_ema_period"]
+        self.third_ema_period = genome["third_ema_period"]
 
         self.ema8 = EMA(period = round(self.first_ema_period))
         self.current_ema8 = np.nan
@@ -46,7 +44,7 @@ class AtrSrsi3EmaStrategy(Strategy):
         self.last_d = np.nan
         self.atr = ATR()
         self.current_atr = np.nan
-        super().__init__(wallet_handler, self.MAX_OPEN_POSITIONS_NUMBER)
+        super().__init__(wallet_handler, int(strategy_params.get("max_open_positions")))
 
     def compute_indicators_step(self, frame: DataFrame):
         close = frame.close_price
@@ -75,13 +73,13 @@ class AtrSrsi3EmaStrategy(Strategy):
     def get_margin_investment(self) -> float:
         return self.wallet_handler.get_balance() * self.investment_rate
 
-    def get_long_conditions(self) -> List[StrategyCondition]:
+    def build_long_conditions(self) -> List[StrategyCondition]:
         return [
             PerpetualStrategyCondition(self.long_perpetual_condition),
             EventStrategyCondition(self.long_event_condition, self.interval_tolerance)
         ]
 
-    def get_short_conditions(self) -> List[StrategyCondition]:
+    def build_short_conditions(self) -> List[StrategyCondition]:
         return [
             PerpetualStrategyCondition(self.short_perpetual_condition),
             EventStrategyCondition(self.short_event_condition, self.interval_tolerance)

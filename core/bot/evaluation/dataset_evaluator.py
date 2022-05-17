@@ -27,7 +27,7 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
     time_span = len(data)
     balance_trend = []
     frame = DataFrame()
-
+    reported_epoch = 0
     if not isinstance(strategy.wallet_handler, TestWallet):
         print("Unable to test the strategy, the wallet handler is not an instance of a TestWallet")
         return None, balance_trend, index
@@ -67,6 +67,7 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
             strategy.update_state(frame)
             if epoch != 0 and epoch % progress_reporter_span == 0 and progress_delegate is not None:
                 progress_delegate(progress_reporter_span)
+                reported_epoch += progress_reporter_span
 
             epoch += 1
     except (KeyboardInterrupt, SystemExit):
@@ -77,7 +78,7 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
     finally:
 
         if progress_delegate is not None:
-            progress_delegate(time_span - epoch)
+            progress_delegate(time_span - reported_epoch)
         for p in strategy.open_positions:
             strategy.wallet_handler.balance += p.investment
         balance_trend.append(strategy.wallet_handler.get_balance())

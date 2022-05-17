@@ -13,8 +13,8 @@ class Strategy(ABC):
         self.max_positions = max_positions
         self.open_positions = []
         self.closed_positions: list[Position] = []
-        self.__long_conditions = self.get_long_conditions()
-        self.__short_conditions = self.get_short_conditions()
+        self.long_conditions = self.build_long_conditions()
+        self.short_conditions = self.build_short_conditions()
         self.__longest_period = 500
         self.wallet_handler = wallet_handler
 
@@ -35,11 +35,11 @@ class Strategy(ABC):
         pass
 
     @abstractmethod
-    def get_long_conditions(self) -> List[StrategyCondition]:
+    def build_long_conditions(self) -> List[StrategyCondition]:
         pass
 
     @abstractmethod
-    def get_short_conditions(self) -> List[StrategyCondition]:
+    def build_short_conditions(self) -> List[StrategyCondition]:
         pass
 
     @staticmethod
@@ -50,42 +50,45 @@ class Strategy(ABC):
         return True
 
     @staticmethod
-    def __reset_conditions(conditions):
+    def reset_conditions(conditions):
         for c in conditions:
             c.reset()
 
     def update_state(self, frame: DataFrame, verbose: bool = False):
         close_price = float(frame.close_price)
 
-        to_remove = []
-        for pos in self.open_positions:
-            should_close, won = pos.should_close(close_price)
-            if should_close:
-                pos.close(won, close_price, self.wallet_handler)
-                if isinstance(self.wallet_handler, TestWallet):
-                    self.wallet_handler.balance += pos.profit + pos.investment
-                    self.wallet_handler.total_balance += pos.profit
-                to_remove.append(pos)
-                self.closed_positions.append(pos)
-                if verbose:
-                    print("Closed position: " + str(pos))
+        # region TestWallet
+        if isinstance(self.wallet_handler, TestWallet):
+            to_remove = []
+            for pos in self.open_positions:
+                should_close, won = pos.should_close(close_price)
+                if should_close:
+                    pos.close(won, close_price, self.wallet_handler)
+                    if isinstance(self.wallet_handler, TestWallet):
+                        self.wallet_handler.balance += pos.profit + pos.investment
+                        self.wallet_handler.total_balance += pos.profit
+                    to_remove.append(pos)
+                    self.closed_positions.append(pos)
+                    if verbose:
+                        print("Closed position: " + str(pos))
 
-        # Remove all the closed positions
-        for rem in to_remove:
-            self.open_positions.remove(rem)
+            # Remove all the closed positions
+            for rem in to_remove:
+                self.open_positions.remove(rem)
+        # endregion
 
         if frame.is_closed:
 
             self.compute_indicators_step(frame)
             # Tick all conditions so they can update their internal state
-            for c in self.__long_conditions:
+            for c in self.long_conditions:
                 c.tick(frame)
 
-            for c in self.__short_conditions:
+            for c in self.short_conditions:
                 c.tick(frame)
 
             if len(self.open_positions) < self.max_positions and self.wallet_handler.get_balance() > 0:
-                if self.__check_conditions(self.__long_conditions):
+                if self.__check_conditions(self.long_conditions):
                     investment = self.get_margin_investment()
                     pos = Position(PositionType.LONG, frame.start_time, close_price, self.get_take_profit(close_price, PositionType.LONG), self.get_stop_loss(close_price, PositionType.LONG),
                                    investment)
@@ -95,9 +98,9 @@ class Strategy(ABC):
                     self.open_positions.append(pos)
                     if verbose:
                         print("\nOpened position: " + str(pos))
-                    self.__reset_conditions(self.__long_conditions)
+                    self.reset_conditions(self.long_conditions)
 
-                if self.__check_conditions(self.__short_conditions):
+                if self.__check_conditions(self.short_conditions):
                     investment = self.get_margin_investment()
                     pos = Position(PositionType.SHORT, frame.start_time, close_price, self.get_take_profit(close_price, PositionType.SHORT), self.get_stop_loss(close_price, PositionType.SHORT),
                                    investment)
@@ -107,4 +110,4 @@ class Strategy(ABC):
                     self.open_positions.append(pos)
                     if verbose:
                         print("\nOpened position: " + str(pos))
-                    self.__reset_conditions(self.__short_conditions)
+                    self.reset_conditions(self.short_conditions)

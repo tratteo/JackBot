@@ -1,5 +1,8 @@
+import importlib
 import os
 from typing import Callable
+
+import config
 
 
 def get_minutes_from_flag(flag: str):
@@ -54,6 +57,10 @@ def get_flag_from_minutes(minutes: int):
         return "1M"
     else:
         return None
+
+
+def load_strategy_module(name: str):
+    return getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + name), name)
 
 
 def create_folders_in_path(path: str, fail_delegate: Callable[[], any] = None):

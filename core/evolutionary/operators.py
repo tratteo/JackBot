@@ -3,6 +3,7 @@ import os
 import shutil
 from os import listdir
 
+import matplotlib.pyplot as plot
 from colorama import Fore
 
 from core.bot.evaluation import dataset_evaluator
@@ -38,19 +39,18 @@ def generator(random, args):
 def calculate_fitness(test_results: [EvaluationResult]) -> float:
     """Calculate the fitness of a strategy TestResult"""
     a = 1
-    b = 1
-    c = 2
+    b = 1.25
+    c = 2.25
     fitness = 0
     for t in test_results:
         if t is not None:
-            fitness += a * t.result_percentage + b * t.estimated_apy + c * t.win_ratio * 100
+            fitness += (a * t.result_percentage) + (b * t.estimated_apy) + (c * t.win_ratio * 100)
     return fitness
 
 
 def iteration_report(val, progress, iteration_progress, lock):
     iteration_progress.value += val
     progress.set_step(iteration_progress.value)
-    pass
 
 
 def evaluate_single(args, data, c) -> EvaluationResult:
@@ -60,13 +60,14 @@ def evaluate_single(args, data, c) -> EvaluationResult:
     parameters = args.get("parameters")
     unique_progress = args.get("unique_progress")
     iteration_progress = args.get("iteration_progress")
+    general_params = args.get("general_params")
     lock = args.get("lock")
 
     params = {}
     for i, (k, v) in enumerate(parameters.items()):
         params[k] = c[i]
 
-    strategy = strategy_class(TestWallet.factory(initial_balance), **params)
+    strategy = strategy_class(TestWallet.factory(initial_balance), params, **general_params)
     result, _, _ = dataset_evaluator.evaluate(strategy, initial_balance, data,
                                               timeframe = timeframe,
                                               progress_reporter_span = 8640,
@@ -131,12 +132,14 @@ def gaussian_adj_mutator(random, candidates, args):
 def observer(population, num_generations, num_evaluations, args):
     """Observe the population evolving"""
     print("\nCurrent pop N: {0}".format(len(population)))
+    max_generations = args.get("max_generations")
     strategy_class = args.get("strategy_class")
     timeframe = args.get("timeframe")
     cache_path = args.get("cache_path")
     lock = args.get("lock")
     max_fitness = args.get("max_fitness", 0)
     unique_progress = args.get("unique_progress")
+    average_fitness_trend = args.get("average_fitness_trend")
     unique_progress.dispose()
     results = []
     onlyfiles = [f for f in listdir(cache_path) if f.endswith(".JSON") or f.endswith(".json")]
@@ -148,12 +151,13 @@ def observer(population, num_generations, num_evaluations, args):
             x = json.loads(file.read())
             results.append(x)
     lock.release()
-
     print("{0} on {1}".format(strategy_class, lib.get_flag_from_minutes(timeframe)))
     print('Generation {0}, {1} evaluations'.format(num_generations, num_evaluations))
     print("Evaluating {0} test results".format(len(results)))
 
     results.sort(key = lambda elem: float(elem["data"]["fitness"]), reverse = True)
+    fitnesses = [e["data"]["fitness"] for e in results]
+    average_fitness_trend.append(float(sum(fitnesses)) / len(fitnesses))
     generation_champ_fit = float(results[0]["data"]["fitness"])
     champion = json.dumps(results[0], indent = 4)
     if generation_champ_fit > max_fitness:
@@ -167,6 +171,18 @@ def observer(population, num_generations, num_evaluations, args):
     args.get("job_index").value = 0
     args.get("iteration_progress").value = 0
     print(Fore.RESET)
+
+    # If this is the last generation, plot the average fitness trend
+    if num_generations >= max_generations:
+        balance_min, balance_max = min(average_fitness_trend), max(average_fitness_trend)
+        balance_len = len(average_fitness_trend)
+        plot.figure(num = "Average fitness")
+        plot.plot(average_fitness_trend, label = "Fitness")
+        plot.ylabel("Fitness")
+        plot.xlabel("Generations")
+        plot.legend()
+        plot.grid()
+        plot.show()
 
     # Prepare for new generation
     print("\nStarting generation {0}".format(num_generations + 1))

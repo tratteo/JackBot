@@ -7,10 +7,12 @@ class EMA:
         self.first_values = []
         self.previous_val = 0
         self.period = period
+        self.length = 0
 
     def compute_next(self, close: float) -> float:
-        if len(self.first_values) < self.period:
+        if self.length < self.period:
             self.first_values.append(close)
+            self.length += 1
             self.previous_val = np.mean(self.first_values)
             return np.nan
         else:

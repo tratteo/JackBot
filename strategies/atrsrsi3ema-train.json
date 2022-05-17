@@ -2,6 +2,9 @@
   "strategy": "AtrSrsi3EmaStrategy",
   "timeframe": "5m",
   "parameters": {
+    "max_open_positions": 1
+  },
+  "genome": {
     "risk_reward_ratio": {
       "lower_bound": 0.25,
       "upper_bound": 5

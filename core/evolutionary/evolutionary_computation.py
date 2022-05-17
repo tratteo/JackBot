@@ -29,6 +29,8 @@ def evolve_parallel(parameters_json, dataset_path, **kwargs) -> Individual:
         # datasets.append(genfromtxt(dataset_path + "//" + f, delimiter = config.DEFAULT_DELIMITER))
         print("Loading {0}...".format(f), flush = True)
         data = genfromtxt(dataset_path + "//" + f, delimiter = config.DEFAULT_DELIMITER)
+        if len(data) > 1_000_000:
+            print("O.O that was a big file")
         datasets.append(data)
         total_length += len(data)
     unique_progress = ProgressBar.create(total_length * pop_size).width(100).build()
@@ -69,12 +71,14 @@ def evolve_parallel(parameters_json, dataset_path, **kwargs) -> Individual:
             lock = sync_manager.Lock(),
             # Data and reports
             datasets = datasets,
+            average_fitness_trend = [],
             unique_progress = unique_progress,
             cache_path = ".cache/",
             # Strategy
             strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + parameters_json["strategy"]), parameters_json["strategy"]),
             timeframe = lib.get_minutes_from_flag(parameters_json["timeframe"]),
-            parameters = parameters_json["parameters"])
+            parameters = parameters_json["genome"],
+            general_params = parameters_json["parameters"])
 
     # Sort and print the best individual, who will be at index 0.
     final_pop.sort(reverse = True)

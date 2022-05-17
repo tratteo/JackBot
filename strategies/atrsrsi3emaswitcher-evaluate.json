@@ -1,0 +1,45 @@
+{
+  "strategy": "TrendAdapterCompositeStrategy",
+  "timeframe": "3m",
+  "parameters": {
+    "max_open_positions": 1,
+    "switch_timeframe_factor": 10,
+    "bear_strategy": {
+      "module": "AtrSrsi3EmaStrategy",
+      "genome": {
+        "risk_reward_ratio": 1,
+        "atr_factor": 8,
+        "investment_ratio": 0.2,
+        "interval_tolerance": 4.52476145285171,
+        "first_ema_period": 9.062733806212616,
+        "second_ema_period": 15.323353603162197,
+        "third_ema_period": 44.93986727973847
+      },
+      "parameters": {
+        "max_open_positions": 1
+      }
+    },
+    "bull_strategy": {
+      "module": "AtrSrsi3EmaStrategy",
+      "genome": {
+        "risk_reward_ratio": 1,
+        "atr_factor": 8,
+        "investment_ratio": 0.2,
+        "interval_tolerance": 4.52476145285171,
+        "first_ema_period": 9.062733806212616,
+        "second_ema_period": 15.323353603162197,
+        "third_ema_period": 44.93986727973847
+      },
+      "parameters": {
+        "max_open_positions": 1
+      }
+    }
+  },
+  "genome": {
+    "rsi_down_threshold": 40,
+    "rsi_up_threshold": 60,
+    "rsi_period": 12,
+    "ema_period": 150,
+    "tolerance_candles": 3
+  }
+}
