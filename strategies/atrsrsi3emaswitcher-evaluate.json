@@ -1,9 +1,9 @@
 {
   "strategy": "TrendAdapterCompositeStrategy",
-  "timeframe": "3m",
+  "timeframe": "5m",
   "parameters": {
     "max_open_positions": 1,
-    "switch_timeframe_factor": 10,
+    "switch_timeframe_factor": 12,
     "bear_strategy": {
       "module": "AtrSrsi3EmaStrategy",
       "genome": {
@@ -36,10 +36,10 @@
     }
   },
   "genome": {
-    "rsi_down_threshold": 40,
-    "rsi_up_threshold": 60,
+    "rsi_down_threshold": 50,
+    "rsi_up_threshold": 50,
     "rsi_period": 12,
-    "ema_period": 150,
+    "ema_period": 100,
     "tolerance_candles": 3
   }
 }

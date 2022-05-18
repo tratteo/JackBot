@@ -84,14 +84,16 @@ class TrendAdapterCompositeStrategy(Strategy):
                 else:
                     self.cumulative_tolerance = 0
 
-                if self.cumulative_tolerance >= self.tolerance_candles * self.factor:
+                if self.cumulative_tolerance >= self.tolerance_candles:
                     switched: bool = False
                     if current_above and self.rsi_val is not np.nan and self.rsi_val > self.rsi_up_threshold and self.active_strategy is not self.bull_strat:
                         self.switch_strategy(self.bull_strat)
+                        print("Going bull from bear: {0}".format(frame.close_time), flush = True)
                         switched = True
 
                     if not current_above and self.rsi_val is not np.nan and self.rsi_val < self.rsi_down_threshold and self.active_strategy is not self.bear_strat:
                         self.switch_strategy(self.bear_strat)
+                        print("Going bear from bull: {0}".format(frame.close_time), flush = True)
                         switched = True
 
                     if switched:
