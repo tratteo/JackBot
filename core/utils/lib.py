@@ -1,3 +1,4 @@
+import csv
 import importlib
 import os
 from typing import Callable
@@ -30,6 +31,14 @@ def get_minutes_from_flag(flag: str):
         return 43200
     else:
         return None
+
+
+def get_delimiter(data_file: str):
+    with open(data_file, "r") as f:
+        sniffer = csv.Sniffer()
+        dialect = sniffer.sniff(f.read())
+        print("Delimiter detected {0}".format(dialect.delimiter))
+        return dialect.delimiter
 
 
 def get_flag_from_minutes(minutes: int):

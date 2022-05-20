@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     champ = evolutionary_computation.evolve_parallel(parameters_json, dataset_path,
                                                      pop_size = 32,
-                                                     generations = 100,
-                                                     mutation_rate = 0.25,
-                                                     crossover_rate = 0.8,
-                                                     processes = 8)
+                                                     generations = 150,
+                                                     mutation_rate = 0.15,
+                                                     crossover_rate = 0.7,
+                                                     processes = 4)

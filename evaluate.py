@@ -1,4 +1,3 @@
-import importlib
 import json
 import sys
 
@@ -6,7 +5,6 @@ import matplotlib.pyplot as plot
 import numpy as np
 from numpy import genfromtxt
 
-import config
 from core.bot.evaluation import dataset_evaluator
 from core.bot.logic.wallet_handler import TestWallet
 from core.utils import lib
@@ -54,12 +52,13 @@ timeframe = lib.get_minutes_from_flag(options_file["timeframe"])
 out = command_manager.get_k("-o")
 # Instantiate the strategy
 strategy_name = options_file["strategy"]
-strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + strategy_name), strategy_name)
+strategy_class = lib.load_strategy_module(strategy_name)
 strategy = strategy_class(TestWallet.factory(initial_balance), options_file["genome"], **options_file["parameters"])
 
 # Load data
 print("Loading " + dataset + "...")
-data = genfromtxt(dataset, delimiter = config.DEFAULT_DELIMITER)
+delimiter = lib.get_delimiter(dataset)
+data = genfromtxt(dataset, delimiter = delimiter)
 
 # Evaluate
 print("Evaluating " + strategy_name + " on " + dataset + " | " + str(options_file["timeframe"]))

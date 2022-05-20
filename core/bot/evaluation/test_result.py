@@ -34,9 +34,9 @@ class EvaluationResult:
             if c.won:
                 won += 1
 
-        self.average_result_percentage = self.result_percentage / len(strategy.closed_positions)
         self.final_balance = self.initial_balance + self.total_profit
         if len(strategy.closed_positions) > 0:
+            self.average_result_percentage = self.result_percentage / len(strategy.closed_positions)
             self.win_ratio = won / len(strategy.closed_positions)
 
         self.estimated_apy = (((self.final_balance / self.initial_balance) ** (365 / self.days)) - 1) * 100

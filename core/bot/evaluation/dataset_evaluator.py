@@ -75,12 +75,12 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
         # for p in strategy.open_positions:
         #     strategy.wallet_handler.balance += p.investment
         return None, balance_trend, index
-    finally:
 
-        if progress_delegate is not None:
-            progress_delegate(time_span - reported_epoch)
-        for p in strategy.open_positions:
-            strategy.wallet_handler.balance += p.investment
-        balance_trend.append(strategy.wallet_handler.get_balance())
-        res = EvaluationResult(strategy, initial_balance, len(data), timeframe)
-        return res, balance_trend, index
+    remaining = time_span - reported_epoch
+    if progress_delegate is not None:
+        progress_delegate(remaining)
+    for p in strategy.open_positions:
+        strategy.wallet_handler.balance += p.investment
+    balance_trend.append(strategy.wallet_handler.get_balance())
+    res = EvaluationResult(strategy, initial_balance, len(data), timeframe)
+    return res, balance_trend, index

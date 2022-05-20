@@ -1,9 +1,9 @@
+import csv
 import json
 import os
 import shutil
 from os import listdir
 
-import matplotlib.pyplot as plot
 from colorama import Fore
 
 from core.bot.evaluation import dataset_evaluator
@@ -18,11 +18,19 @@ def generator(random, args):
     parameters = args.get("parameters")
     if not initialized:
         cache_path = args.get("cache_path")
-
         if os.path.exists(cache_path):
             shutil.rmtree(cache_path)
-        lib.create_folders_in_path(args.get("cache_path"))
+        avg_fitness_path = args.get("avg_fitness_path")
+        if os.path.exists(avg_fitness_path):
+            shutil.rmtree(avg_fitness_path)
+
+        lib.create_folders_in_path(args.get("avg_fitness_path"))
         lib.create_folders_in_path(args.get("cache_path") + "champion/")
+
+        with open(avg_fitness_path, 'a+', newline = "") as f:
+            writer = csv.writer(f, delimiter = ";")
+            row = ["Average", "Best", "Worst"]
+            writer.writerow(row)
 
         onlyfiles = [f for f in listdir(cache_path) if f.endswith(".JSON") or f.endswith(".json")]
         for f in onlyfiles:
@@ -36,21 +44,35 @@ def generator(random, args):
     return genome
 
 
-def calculate_fitness(test_results: [EvaluationResult]) -> float:
+def penalize(factor: float, val: float) -> float:
+    if val < 0:
+        return val * factor
+    return val
+
+
+def calculate_fitness(result: EvaluationResult) -> float:
     """Calculate the fitness of a strategy TestResult"""
-    a = 1
-    b = 1.25
-    c = 2.25
-    fitness = 0
-    for t in test_results:
-        if t is not None:
-            fitness += (a * t.result_percentage) + (b * t.estimated_apy) + (c * t.win_ratio * 100)
+    a = 0.75
+    b = 2
+    c = 5
+    negative_penalty = 3
+
+    fac1 = penalize(negative_penalty, a * result.result_percentage)
+    fac2 = penalize(negative_penalty, b * result.estimated_apy)
+    fac3 = penalize(negative_penalty, c * result.win_ratio * 100)
+    result_fit = penalize(negative_penalty, fac1 + fac2 + fac3)
+    fitness = result_fit
     return fitness
 
 
-def iteration_report(val, progress, iteration_progress, lock):
+def iteration_report(val, args):
+    unique_progress = args.get("unique_progress")
+    iteration_progress = args.get("iteration_progress")
+    lock = args.get("lock")
+    lock.acquire()
     iteration_progress.value += val
-    progress.set_step(iteration_progress.value)
+    unique_progress.set_step(iteration_progress.value)
+    lock.release()
 
 
 def evaluate_single(args, data, c) -> EvaluationResult:
@@ -58,10 +80,7 @@ def evaluate_single(args, data, c) -> EvaluationResult:
     strategy_class = args.get("strategy_class")
     timeframe = args.get("timeframe")
     parameters = args.get("parameters")
-    unique_progress = args.get("unique_progress")
-    iteration_progress = args.get("iteration_progress")
     general_params = args.get("general_params")
-    lock = args.get("lock")
 
     params = {}
     for i, (k, v) in enumerate(parameters.items()):
@@ -70,8 +89,9 @@ def evaluate_single(args, data, c) -> EvaluationResult:
     strategy = strategy_class(TestWallet.factory(initial_balance), params, **general_params)
     result, _, _ = dataset_evaluator.evaluate(strategy, initial_balance, data,
                                               timeframe = timeframe,
-                                              progress_reporter_span = 8640,
-                                              progress_delegate = lambda val: iteration_report(val, unique_progress, iteration_progress, lock))
+                                              progress_reporter_span = 8640)
+    # progress_delegate = lambda val: iteration_report(val, args))
+
     return result
 
 
@@ -84,24 +104,25 @@ def evaluator(candidates, args):
     job_index = args.get("job_index")
     lock = args.get("lock")
     fitnesses = []
-    results = []
 
     for i, c in enumerate(candidates):
-        # with concurrent.futures.ThreadPoolExecutor() as executor:
-        #     num = len(datasets)
-        #     thread_results = executor.map(evaluate_single, itertools.repeat(args, num), datasets, itertools.repeat(c, num))
-        #     for r in thread_results:
-        #         results.append(r)
-        for d in datasets:
-            results.append(evaluate_single(args, d, c))
-
-        fit = calculate_fitness(results)
-        fitnesses.append(fit)
+        simulations = {}
+        fitness = 0
+        for _, (k, v) in enumerate(datasets.items()):
+            res = evaluate_single(args, v, c)
+            fit = calculate_fitness(res)
+            fitness += fit
+            simulations[k] = [res, fit]
+        fitnesses.append(fitness)
         lock.acquire()
         path = cache_path + str(job_index.value) + ".json"
         try:
-            dics = {str(i): vars(r) for i, r in enumerate(results)}
-            dic = {"fitness": fit, "index": job_index.value, "genome": dict([(p[1], p[0]) for p in zip(c, parameters)])}
+            dics = {}
+            for _, (k, v) in enumerate(simulations.items()):
+                sim_dic = vars(v[0])
+                sim_dic["simulation_fitness"] = v[1]
+                dics[k] = sim_dic
+            dic = {"fitness": fitness, "index": job_index.value, "genome": dict([(p[1], p[0]) for p in zip(c, parameters)])}
             dics["data"] = dic
             with open(path, "w") as file:
                 file.write(json.dumps(dics, default = lambda x: None, indent = 4))
@@ -122,7 +143,7 @@ def gaussian_adj_mutator(random, candidates, args):
             if random.random() > mutation_rate:
                 continue
             mean = (values[j]["upper_bound"] - values[j]["lower_bound"]) / 2
-            stdv = (values[j]["upper_bound"] - values[j]["lower_bound"]) / 14
+            stdv = (values[j]["upper_bound"] - values[j]["lower_bound"]) / 5
             g += random.gauss(mean, stdv)
             candidates[i][j] = g
         candidates[i] = bound(candidates[i], args)
@@ -131,16 +152,14 @@ def gaussian_adj_mutator(random, candidates, args):
 
 def observer(population, num_generations, num_evaluations, args):
     """Observe the population evolving"""
-    print("\nCurrent pop N: {0}".format(len(population)))
-    max_generations = args.get("max_generations")
+    print("Current pop N: {0}".format(len(population)))
+    unique_progress = args.get("unique_progress")
     strategy_class = args.get("strategy_class")
     timeframe = args.get("timeframe")
     cache_path = args.get("cache_path")
     lock = args.get("lock")
     max_fitness = args.get("max_fitness", 0)
-    unique_progress = args.get("unique_progress")
-    average_fitness_trend = args.get("average_fitness_trend")
-    unique_progress.dispose()
+    avg_fitness_path = args.get("avg_fitness_path")
     results = []
     onlyfiles = [f for f in listdir(cache_path) if f.endswith(".JSON") or f.endswith(".json")]
 
@@ -153,19 +172,20 @@ def observer(population, num_generations, num_evaluations, args):
     lock.release()
     print("{0} on {1}".format(strategy_class, lib.get_flag_from_minutes(timeframe)))
     print('Generation {0}, {1} evaluations'.format(num_generations, num_evaluations))
-    print("Evaluating {0} test results".format(len(results)))
+    # print("Evaluating {0} test results".format(len(results)))
 
     results.sort(key = lambda elem: float(elem["data"]["fitness"]), reverse = True)
     fitnesses = [e["data"]["fitness"] for e in results]
-    average_fitness_trend.append(float(sum(fitnesses)) / len(fitnesses))
+    average_fitness = float(sum(fitnesses)) / len(fitnesses)
     generation_champ_fit = float(results[0]["data"]["fitness"])
+    worst_gen_fit = float(results[-1]["data"]["fitness"])
     champion = json.dumps(results[0], indent = 4)
     if generation_champ_fit > max_fitness:
         args["max_fitness"] = generation_champ_fit
         with open(cache_path + "champion/champ.json", "w") as file:
             file.write(champion)
 
-    print('{0}Champion: \n{1}'.format(Fore.GREEN, champion))
+    # print('{0}Champion: \n{1}'.format(Fore.GREEN, champion))
     with open(cache_path + "champion/generation" + str(num_generations) + "champ.json", "w") as file:
         file.write(champion)
     args.get("job_index").value = 0
@@ -173,19 +193,26 @@ def observer(population, num_generations, num_evaluations, args):
     print(Fore.RESET)
 
     # If this is the last generation, plot the average fitness trend
-    if num_generations >= max_generations:
-        balance_min, balance_max = min(average_fitness_trend), max(average_fitness_trend)
-        balance_len = len(average_fitness_trend)
-        plot.figure(num = "Average fitness")
-        plot.plot(average_fitness_trend, label = "Fitness")
-        plot.ylabel("Fitness")
-        plot.xlabel("Generations")
-        plot.legend()
-        plot.grid()
-        plot.show()
+    # if num_generations >= max_generations:
+    #     balance_min, balance_max = min(average_fitness_trend), max(average_fitness_trend)
+    #     balance_len = len(average_fitness_trend)
+    #     plot.figure(num = "Average fitness")
+    #     hl, = plot.plot(average_fitness_trend, label = "Fitness")
+    #     plot.ylabel("Fitness")
+    #     plot.xlabel("Generations")
+    #     plot.legend()
+    #     plot.grid()
+    #     plot.show()
 
-    # Prepare for new generation
-    print("\nStarting generation {0}".format(num_generations + 1))
+    with open(avg_fitness_path, 'a+', newline = "") as f:
+        writer = csv.writer(f, delimiter = ";")
+        row = [float(average_fitness), generation_champ_fit, worst_gen_fit]
+        writer.writerow(row)
+
+    unique_progress.dispose()
+    print("-" * 100)
+    print("Starting generation {0}".format(num_generations + 1))
+    print("Evaluating...")
 
 
 def bounder(candidate, args):
