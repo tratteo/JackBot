@@ -1,5 +1,4 @@
-import importlib
-from multiprocessing import Manager
+from multiprocessing.managers import SyncManager
 from random import Random
 from time import time
 
@@ -7,7 +6,6 @@ import inspyred
 from inspyred.ec import Individual
 from numpy import genfromtxt
 
-import config
 from core.evolutionary.operators import *
 from core.utils.lib import ProgressBar
 
@@ -38,13 +36,13 @@ def evolve_parallel(parameters_json, dataset_path, **kwargs) -> Individual:
 
     # Create EA
     ec = inspyred.ec.EvolutionaryComputation(rand)
-    ec.terminator = [inspyred.ec.terminators.generation_termination, inspyred.ec.terminators.average_fitness_termination]
+    ec.terminator = [inspyred.ec.terminators.generation_termination]
     ec.variator = [gaussian_adj_mutator, inspyred.ec.variators.uniform_crossover]
     ec.selector = inspyred.ec.selectors.tournament_selection
-    ec.replacer = inspyred.ec.replacers.random_replacement
+    ec.replacer = inspyred.ec.replacers.plus_replacement
     ec.observer = observer
 
-    with Manager() as sync_manager:
+    with SyncManager() as sync_manager:
         # Evolve
         print("Starting evolutionary computation\nParameters: {0}\n".format(kwargs), flush = True)
 
@@ -64,22 +62,21 @@ def evolve_parallel(parameters_json, dataset_path, **kwargs) -> Individual:
             crossover_rate = crossover_rate,
             # Selection
             num_selected = pop_size,
-            tournament_size = int(4),
-            # Replacer
-            num_elites = int(pop_size / 8),
+            tournament_size = int(8),
             # Synchronization
-            iteration_progress = sync_manager.Value("iteration_progress", 0),
-            job_index = sync_manager.Value("job_index", 0),
+            iteration_progress = sync_manager.Value("I", 0),
+            job_index = sync_manager.Value("I", 0),
             lock = sync_manager.Lock(),
             # Data and reports
             datasets = datasets,
             unique_progress = unique_progress,
             cache_path = ".cache/",
-            avg_fitness_path = ".cache/reports/avg_fitness.csv",
+            reports_path = ".cache/reports/",
+            fitness_report_file = "fitness_report.csv",
             # Strategy
-            strategy_class = getattr(importlib.import_module(config.DEFAULT_STRATEGIES_FOLDER + "." + parameters_json["strategy"]), parameters_json["strategy"]),
+            strategy_class = lib.load_strategy_module(parameters_json["strategy"]),
             timeframe = lib.get_minutes_from_flag(parameters_json["timeframe"]),
-            parameters = parameters_json["genome"],
+            genome = parameters_json["genome"],
             general_params = parameters_json["parameters"])
 
     # Sort and print the best individual, who will be at index 0.

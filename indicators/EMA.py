@@ -21,25 +21,6 @@ class EMA:
             return self.previous_val
 
     def reset(self):
+        self.length = 0
         self.previous_val = 0
         self.first_values = []
-
-# if __name__ == "__main__":
-#     # TEST EMA
-#
-#     ema = EMA()
-#
-#     OPEN_T: int = 0
-#     HIGH: int = 2
-#     LOW: int = 3
-#     CLOSE: int = 4
-#     CLOSE_T: int = 6
-#
-#     data = genfromtxt(r"..\bot\data\ETHUSDT_1-6_2021.csv", delimiter = config.DEFAULT_DELIMITER)
-#     close = data[:, CLOSE][:100]
-#     high = data[:, HIGH][:100]
-#     low = data[:, LOW][:100]
-#
-#     for n, i in enumerate(close):
-#         print(n, " my ", ema.compute_next(i), " ta ", ta.EMA(close, 20)[n])
-#     # print(ta.EMA(a, 20)[:200])

@@ -1,0 +1,17 @@
+{
+  "strategy": "PercentageSrsi3EmaStrategy",
+  "timeframe": "5m",
+  "parameters": {
+    "max_open_positions": 1
+  },
+  "genome": {
+    "risk_reward_ratio": 1.0920038260931315,
+    "percentage_stop_loss": 0.29113332661593483,
+    "investment_ratio": 0.2,
+    "interval_tolerance": 14.088198457393217,
+    "first_ema_period": 9.100312474847735,
+    "second_ema_period": 30.334149576696174,
+    "third_ema_period": 65.35465332682297
+  }
+}
+

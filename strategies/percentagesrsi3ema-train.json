@@ -1,10 +1,18 @@
 {
-  "strategy": "AtrSrsi3EmaStrategy",
-  "timeframe": "10m",
+  "strategy": "PercentageSrsi3EmaStrategy",
+  "timeframe": "5m",
   "parameters": {
     "max_open_positions": 1
   },
   "genome": {
+    "risk_reward_ratio": {
+      "lower_bound": 1,
+      "upper_bound": 10
+    },
+    "percentage_stop_loss": {
+      "lower_bound": 0.01,
+      "upper_bound": 0.3
+    },
     "investment_ratio": {
       "lower_bound": 0.01,
       "upper_bound": 0.2
@@ -14,7 +22,7 @@
       "upper_bound": 15
     },
     "first_ema_period": {
-      "lower_bound": 4,
+      "lower_bound": 5,
       "upper_bound": 12
     },
     "second_ema_period": {
@@ -23,7 +31,7 @@
     },
     "third_ema_period": {
       "lower_bound": 40,
-      "upper_bound": 200
+      "upper_bound": 300
     }
   }
 }

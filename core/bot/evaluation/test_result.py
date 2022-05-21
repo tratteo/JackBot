@@ -40,6 +40,7 @@ class EvaluationResult:
             self.win_ratio = won / len(strategy.closed_positions)
 
         self.estimated_apy = (((self.final_balance / self.initial_balance) ** (365 / self.days)) - 1) * 100
+        self.estimated_apy = -100 if self.estimated_apy < -100 else self.estimated_apy
         self.opened_positions = len(strategy.open_positions) + len(strategy.closed_positions)
 
     def __str__(self):
