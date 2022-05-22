@@ -59,7 +59,7 @@ def calculate_fitness(result: EvaluationResult) -> float:
     fac2 = math.pow((penalizing_factor * r) + 1, a)
     fac3 = math.pow(wr + 1, 1 - a)
     result_fit = fac2 * fac3
-    fitness = result_fit
+    fitness = 365 * result_fit / result.days
     return fitness
 
 
