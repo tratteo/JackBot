@@ -48,11 +48,16 @@ def generator(random, args):
 
 def calculate_fitness(result: EvaluationResult) -> float:
     """Calculate the fitness of a strategy TestResult"""
-    a = 0.25
-    # APY is now positive
-    factor = (result.estimated_apy / float(100)) + 1
-    fac2 = math.pow(factor * (result.estimated_apy + 100), a)
-    fac3 = math.pow(result.win_ratio * 100, 1 - a)
+    a = 0.35
+    g = 2.5
+    r = result.initial_balance / result.final_balance
+    wr = result.win_ratio
+    penalizing_factor = 1
+    # Penalizes negative values
+    if r < 1:
+        penalizing_factor = math.pow(r, g)
+    fac2 = math.pow((penalizing_factor * r) + 1, a)
+    fac3 = math.pow(wr + 1, 1 - a)
     result_fit = fac2 * fac3
     fitness = result_fit
     return fitness

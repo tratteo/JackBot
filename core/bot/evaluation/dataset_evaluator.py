@@ -1,6 +1,6 @@
 import numpy
 
-from core.bot.evaluation.test_result import EvaluationResult
+from core.bot.evaluation.evaluation_result import EvaluationResult
 from core.bot.logic.strategy import Strategy
 from core.bot.logic.wallet_handler import TestWallet
 from core.bot.middleware.data_frame import DataFrame

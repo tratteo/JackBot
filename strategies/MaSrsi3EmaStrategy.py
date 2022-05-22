@@ -7,7 +7,7 @@ from indicators.MA import MA
 from indicators.STOCHRSI import STOCHRSI
 
 
-class EmaSrsi3EmaStrategy(Strategy):
+class MaSrsi3EmaStrategy(Strategy):
 
     def __init__(self, wallet_handler: WalletHandler, genome: dict, **strategy_params):
         self.risk_reward_ratio = genome["risk_reward_ratio"]
