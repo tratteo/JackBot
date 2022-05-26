@@ -14,6 +14,8 @@ class MA:
             self.length += 1
             return np.nan
         else:
+            self.first_values.pop(0)
+            self.first_values.append(close)
             self.val = sum(self.first_values)
             return self.val / float(self.period)
 

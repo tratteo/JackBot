@@ -3,13 +3,13 @@ import sys
 
 import matplotlib.pyplot as plot
 import numpy as np
-from numpy import genfromtxt
 
 from core.bot.evaluation import dataset_evaluator
 from core.bot.logic.wallet_handler import TestWallet
 from core.utils import lib
 from core.utils.command_handler import CommandHandler
 from core.utils.lib import ProgressBar
+from indicators.MA import MA
 
 
 def helper(helper_str: str):
@@ -57,8 +57,8 @@ strategy = strategy_class(TestWallet.factory(initial_balance), options_file["gen
 
 # Load data
 print("Loading " + dataset + "...")
-delimiter = lib.get_delimiter(dataset)
-data = genfromtxt(dataset, delimiter = delimiter)
+
+data = lib.dynamic_load_data(dataset)
 
 # Evaluate
 print("Evaluating " + strategy_name + " on " + dataset + " | " + str(options_file["timeframe"]))
@@ -77,8 +77,14 @@ if out is not None:
 if plot_arg is not None:
     balance_min, balance_max = min(balance), max(balance)
     balance_len = len(balance)
+    balance_ma = MA(20)
+    ma_trend = []
+    for i in range(balance_len):
+        ma_trend.append(balance_ma.compute_next(balance[i]))
     plot.figure(num = strategy_name)
     plot.plot(balance, label = "Balance")
+    plot.plot(ma_trend, label = "Moving average")
+    plot.plot([initial_balance] * balance_len, label = "Initial balance")
     plot.title(strategy_name + " on " + dataset)
     plot.ylabel("Balance")
     plot.xlabel(plot_arg)

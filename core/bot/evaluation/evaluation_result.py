@@ -14,8 +14,9 @@ class EvaluationResult:
         self.win_ratio = 0
         self.estimated_apy = 0
         self.average_result_percentage = 0
-        self.result_percentage = 0
+        self.result_ratio = 0
         self.opened_positions = 0
+        self.result_percentage = 0
         self.closed_positions = 0
         self.populate(strategy, initial_balance, minute_candles, time_frame_minutes)
 
@@ -39,7 +40,8 @@ class EvaluationResult:
             self.average_result_percentage = self.result_percentage / len(strategy.closed_positions)
             self.win_ratio = won / len(strategy.closed_positions)
 
-        self.estimated_apy = (((self.final_balance / self.initial_balance) ** (365 / self.days)) - 1) * 100
+        self.result_ratio = self.final_balance / self.initial_balance
+        self.estimated_apy = ((self.result_ratio ** (365 / self.days)) - 1) * 100
         self.estimated_apy = -100 if self.estimated_apy < -100 else self.estimated_apy
         self.opened_positions = len(strategy.open_positions) + len(strategy.closed_positions)
 

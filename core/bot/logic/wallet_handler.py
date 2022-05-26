@@ -20,4 +20,4 @@ class TestWallet(WalletHandler):
         self.total_balance = initial_balance
 
     def get_balance(self) -> float:
-        return self.total_balance
+        return self.balance

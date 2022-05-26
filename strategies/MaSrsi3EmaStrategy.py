@@ -3,7 +3,6 @@ import numpy as np
 from core.bot.logic.condition import PerpetualStrategyCondition, EventStrategyCondition
 from core.bot.logic.strategy import *
 from indicators.EMA import EMA
-from indicators.MA import MA
 from indicators.STOCHRSI import STOCHRSI
 
 
@@ -30,7 +29,7 @@ class MaSrsi3EmaStrategy(Strategy):
         self.last_k = np.nan
         self.current_d = np.nan
         self.last_d = np.nan
-        self.sl_ema = MA(period = round(self.stop_loss_ema))
+        self.sl_ema = EMA(period = round(self.stop_loss_ema))
         self.current_slema = np.nan
         super().__init__(wallet_handler, int(strategy_params.get("max_open_positions")))
 

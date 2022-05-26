@@ -13,7 +13,7 @@ CLOSE_T: int = 6
 
 
 def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, progress_delegate = None, progress_delegate_args = None, balance_update_interval: int = 1440,
-             progress_reporter_span: int = 1440, timeframe: int = 3,
+             progress_reporter_span: int = 1440, timeframe: int = 3, report_residual: bool = True,
              index: int = 0) -> [EvaluationResult,
                                  list[float], int]:
     """Evaluate the strategy in a dataset
@@ -80,14 +80,15 @@ def evaluate(strategy: Strategy, initial_balance: float, data: numpy.ndarray, pr
         #     strategy.wallet_handler.balance += p.investment
         return None, balance_trend, index
 
-    remaining = time_span - reported_epoch
-    if progress_delegate is not None:
-        if progress_delegate_args is None:
-            progress_delegate(remaining)
-        else:
-            progress_delegate(remaining, progress_delegate_args)
+    if report_residual:
+        remaining = time_span - reported_epoch
+        if progress_delegate is not None:
+            if progress_delegate_args is None:
+                progress_delegate(remaining)
+            else:
+                progress_delegate(remaining, progress_delegate_args)
     for p in strategy.open_positions:
         strategy.wallet_handler.balance += p.investment
-    balance_trend.append(strategy.wallet_handler.get_balance())
+    balance_trend.append(strategy.wallet_handler.total_balance)
     res = EvaluationResult(strategy, initial_balance, len(data), timeframe)
     return res, balance_trend, index

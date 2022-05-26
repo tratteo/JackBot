@@ -1,0 +1,24 @@
+{
+  "strategy": "MaSrsi3EmaStrategy",
+  "timeframe": "5m",
+  "parameters": {
+    "max_open_positions": 3
+  },
+  "genome": {
+    "risk_reward_ratio": 0.75,
+    "stop_loss_ema_period": 191.1737315565108,
+    "investment_ratio": 0.2,
+    "interval_tolerance": 11.930856806937637,
+    "first_ema_period": 10,
+    "second_ema_period": 25.506868496555295,
+    "third_ema_period": 335.7247760012919
+  },        "genome": {
+            "risk_reward_ratio": 0.8010097694248481,
+            "stop_loss_ema_period": 383.36946064452195,
+            "investment_ratio": 0.1984691600087534,
+            "interval_tolerance": 6.128949458208281,
+            "first_ema_period": 11.86446964751168,
+            "second_ema_period": 38.248749868308046,
+            "third_ema_period": 157.50806711918773
+        }
+}

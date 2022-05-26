@@ -23,6 +23,7 @@ if __name__ == '__main__':
     command_manager = CommandHandler.create() \
         .positional("Genetic parameters") \
         .positional("Dataset folder") \
+        .keyed("-v", "Validation set") \
         .on_help(helper) \
         .on_fail(failure) \
         .build(sys.argv)
@@ -38,10 +39,17 @@ if __name__ == '__main__':
         exit(1)
 
     dataset_path = command_manager.get_p(1)
-
+    validation_set_path = command_manager.get_k("-v")
     champ = evolutionary_computation.evolve_parallel(parameters_json, dataset_path,
-                                                     pop_size = 32,
-                                                     generations = 100,
-                                                     mutation_rate = 0.1,
+                                                     validation_set_path = None,
+                                                     validation_set_counter_threshold = 10,
+                                                     validation_set_frequency = 5,
+                                                     tournament_size = 5,
+                                                     cache_path = ".cache/",
+                                                     reports_path = ".cache/reports/",
+                                                     fitness_report_file = "fitness.csv",
+                                                     pop_size = 25,
+                                                     generations = 200,
+                                                     mutation_rate = 0.15,
                                                      crossover_rate = 0.75,
-                                                     processes = 4)
+                                                     processes = 6)

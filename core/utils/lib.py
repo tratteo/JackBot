@@ -3,6 +3,9 @@ import importlib
 import os
 from typing import Callable
 
+import numpy as np
+from numpy import genfromtxt
+
 import config
 
 
@@ -33,10 +36,19 @@ def get_minutes_from_flag(flag: str):
         return None
 
 
+def dynamic_load_data(path: str) -> np.ndarray:
+    with open(path, "r") as f:
+        sniffer = csv.Sniffer()
+        dialect = sniffer.sniff(f.read(2048))
+        delimiter = str(dialect.delimiter)
+        data = genfromtxt(path, delimiter = delimiter)
+    return data
+
+
 def get_delimiter(data_file: str):
     with open(data_file, "r") as f:
         sniffer = csv.Sniffer()
-        dialect = sniffer.sniff(f.read())
+        dialect = sniffer.sniff(f.read(2048))
         print("Delimiter detected {0}".format(dialect.delimiter))
         return dialect.delimiter
 
