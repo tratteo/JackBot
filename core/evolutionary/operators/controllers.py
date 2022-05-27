@@ -1,5 +1,6 @@
 import csv
 import json
+import math
 import os
 import shutil
 
@@ -26,7 +27,7 @@ def try_initialize(args):
 
         with open(reports_path + fitness_report_file, 'a+', newline = "") as f:
             writer = csv.writer(f, delimiter = ";")
-            row = ["Average", "Best", "Worst"]
+            row = ["Average", "Best", "Worst", "Stdev"]
             writer.writerow(row)
 
         args["validation_set_counter"] = 0
@@ -130,13 +131,23 @@ def strategy_observer(population, num_generations, num_evaluations, args):
 
     # Append fitness reports
     fitness_report_file = args.get("fitness_report_file")
+    average_fitness = float(sum(fitnesses)) / len(fitnesses)
+    stdev = calculate_stdev(fitnesses, average_fitness)
     with open(reports_path + fitness_report_file, 'a+', newline = "") as f:
         writer = csv.writer(f, delimiter = ";")
-        row = [float(sum(fitnesses)) / len(fitnesses), generation_champ_fitness, float(results[-1]["data"]["fitness"])]
+        row = [average_fitness, generation_champ_fitness, float(results[-1]["data"]["fitness"]), stdev]
         writer.writerow(row)
 
     # Prepare for the next Gen
     args.get("unique_progress").dispose()
+
+
+def calculate_stdev(values, mean):
+    cumulative = 0
+    for v in values:
+        cumulative += (v - mean) ** 2
+    cumulative /= float(len(values))
+    return math.sqrt(cumulative)
 
 
 def strategy_genome_bounder(candidate, args):

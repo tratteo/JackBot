@@ -8,7 +8,7 @@ from core.bot.logic.wallet_handler import TestWallet
 
 def calculate_fitness(results: list[EvaluationResult]) -> float:
     """Calculate the fitness of a strategy TestResult"""
-    a = 0.625
+    a = 0.65
     g = 3.75
     d = 1.75
     fitness = 0

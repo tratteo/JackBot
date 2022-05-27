@@ -57,7 +57,7 @@ def evolve_parallel(parameters_json, dataset_path, **kwargs) -> Individual:
     # Create EA
     ec = inspyred.ec.EvolutionaryComputation(rand)
     ec.terminator = [inspyred.ec.terminators.generation_termination, validation_terminator]
-    ec.variator = [gaussian_adj_mutator, inspyred.ec.variators.uniform_crossover]
+    ec.variator = [gaussian_adj_mutator, inspyred.ec.variators.arithmetic_crossover]
     ec.selector = inspyred.ec.selectors.tournament_selection
     ec.replacer = inspyred.ec.replacers.plus_replacement
     ec.observer = strategy_observer

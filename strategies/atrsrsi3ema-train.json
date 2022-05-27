@@ -31,7 +31,7 @@
     },
     "third_ema_period": {
       "lower_bound": 50,
-      "upper_bound": 600
+      "upper_bound": 500
     }
   }
 }

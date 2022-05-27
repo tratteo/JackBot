@@ -48,8 +48,8 @@ if __name__ == '__main__':
                                                      cache_path = ".cache/",
                                                      reports_path = ".cache/reports/",
                                                      fitness_report_file = "fitness.csv",
-                                                     pop_size = 25,
+                                                     pop_size = 20,
                                                      generations = 200,
-                                                     mutation_rate = 0.15,
+                                                     mutation_rate = 0.1,
                                                      crossover_rate = 0.75,
-                                                     processes = 6)
+                                                     processes = 4)

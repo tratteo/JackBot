@@ -5,12 +5,12 @@
     "max_open_positions": 2
   },
   "genome": {
-    "risk_reward_ratio": 0.5,
-    "atr_factor": 3.138218600587192,
+    "risk_reward_ratio": 0.5051284993245375,
+    "atr_factor": 5.989810260435078,
     "investment_ratio": 0.2,
-    "interval_tolerance": 8.828117331049034,
-    "first_ema_period": 9.354834819622914,
-    "second_ema_period": 40.04949709112786,
-    "third_ema_period": 66.05508829304028
+    "interval_tolerance": 13.025899475376313,
+    "first_ema_period": 12.993684384950459,
+    "second_ema_period": 41.54823388996649,
+    "third_ema_period": 106.70975401807752
   }
 }
